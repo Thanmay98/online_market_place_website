@@ -213,7 +213,20 @@
     document.getElementById("close-cart").addEventListener("click",closeCart);
     document.getElementById("overlay").addEventListener("click",e=>{if(e.target.id==="overlay")closeCart();});
     document.getElementById("search").addEventListener("input",e=>{query=e.target.value.trim().toLowerCase();renderProducts();});
-    document.getElementById("search-btn").addEventListener("click",()=>{query=document.getElementById("search").value.trim().toLowerCase();renderProducts();});
+    document.getElementById("search-btn").addEventListener("click", () => {
+  query = document.getElementById("search").value.trim().toLowerCase();
+  renderProducts();
+  document.getElementById("shop").scrollIntoView({
+    behavior: "smooth"
+  });
+});
+
+document.getElementById("search").addEventListener("keydown", event => {
+  if (event.key === "Enter") {
+    event.preventDefault();
+    document.getElementById("search-btn").click();
+  }
+});
     document.getElementById("sort").addEventListener("change",renderProducts);
     document.getElementById("shop-now").addEventListener("click",()=>document.getElementById("shop").scrollIntoView({behavior:"smooth"}));
     renderCategories(); renderProducts(); updateCart();
