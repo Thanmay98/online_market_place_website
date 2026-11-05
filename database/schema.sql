@@ -42,3 +42,22 @@ CREATE TABLE IF NOT EXISTS categories (
   description    TEXT,
   status         ENUM('active','inactive') NOT NULL DEFAULT 'active'
 ) ENGINE=InnoDB;
+
+-- ---------------------------------------------------------
+-- addresses
+-- A user can save multiple addresses (one-to-many). The FK
+-- to users enforces that every address belongs to a real
+-- user; ON DELETE CASCADE removes a user's addresses with
+-- them, since an address has no meaning on its own.
+-- ---------------------------------------------------------
+CREATE TABLE IF NOT EXISTS addresses (
+  address_id    INT AUTO_INCREMENT PRIMARY KEY,
+  user_id       INT          NOT NULL,
+  address_line  VARCHAR(255) NOT NULL,
+  city          VARCHAR(100) NOT NULL,
+  state         VARCHAR(100) NOT NULL,
+  pincode       VARCHAR(10)  NOT NULL,
+  CONSTRAINT fk_addresses_user
+    FOREIGN KEY (user_id) REFERENCES users(user_id)
+    ON DELETE CASCADE
+) ENGINE=InnoDB;
