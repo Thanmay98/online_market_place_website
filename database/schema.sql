@@ -91,3 +91,41 @@ CREATE TABLE IF NOT EXISTS products (
   CONSTRAINT chk_products_price CHECK (price >= 0),
   CONSTRAINT chk_products_stock CHECK (stock_quantity >= 0)
 ) ENGINE=InnoDB;
+
+-- ---------------------------------------------------------
+-- cart
+-- One active shopping cart per customer (one-to-one, so
+-- customer_id is UNIQUE). Deleting the customer deletes
+-- their cart.
+-- ---------------------------------------------------------
+CREATE TABLE IF NOT EXISTS cart (
+  cart_id      INT AUTO_INCREMENT PRIMARY KEY,
+  customer_id  INT        NOT NULL UNIQUE,
+  created_at   TIMESTAMP  NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT fk_cart_customer
+    FOREIGN KEY (customer_id) REFERENCES users(user_id)
+    ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+-- ---------------------------------------------------------
+-- cart_items
+-- The line items inside a cart (one cart -> many items).
+--   * UNIQUE(cart_id, product_id): a product appears once per
+--     cart; adding it again bumps quantity instead of duplicating.
+--   * price snapshots the product's price when it was added.
+-- ---------------------------------------------------------
+CREATE TABLE IF NOT EXISTS cart_items (
+  cart_item_id  INT AUTO_INCREMENT PRIMARY KEY,
+  cart_id       INT            NOT NULL,
+  product_id    INT            NOT NULL,
+  quantity      INT            NOT NULL DEFAULT 1,
+  price         DECIMAL(10,2)  NOT NULL,
+  CONSTRAINT fk_cart_items_cart
+    FOREIGN KEY (cart_id) REFERENCES cart(cart_id)
+    ON DELETE CASCADE,
+  CONSTRAINT fk_cart_items_product
+    FOREIGN KEY (product_id) REFERENCES products(product_id)
+    ON DELETE CASCADE,
+  CONSTRAINT uq_cart_items_cart_product UNIQUE (cart_id, product_id),
+  CONSTRAINT chk_cart_items_qty CHECK (quantity > 0)
+) ENGINE=InnoDB;
