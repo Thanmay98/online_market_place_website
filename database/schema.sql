@@ -183,3 +183,28 @@ CREATE TABLE IF NOT EXISTS order_items (
   CONSTRAINT chk_order_items_qty CHECK (quantity > 0),
   CONSTRAINT chk_order_items_amounts CHECK (price >= 0 AND subtotal >= 0)
 ) ENGINE=InnoDB;
+
+-- ---------------------------------------------------------
+-- reviews
+-- A customer's rating + comment on a product. UNIQUE(customer,
+-- product) allows only one review per product per customer;
+-- rating is held to 1-5 by a CHECK. (The "only products you
+-- actually bought" rule is checked in the backend against
+-- order history, since it can't be a simple constraint.)
+-- ---------------------------------------------------------
+CREATE TABLE IF NOT EXISTS reviews (
+  review_id    INT AUTO_INCREMENT PRIMARY KEY,
+  customer_id  INT        NOT NULL,
+  product_id   INT        NOT NULL,
+  rating       TINYINT    NOT NULL,
+  comment      TEXT,
+  created_at   TIMESTAMP  NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT fk_reviews_customer
+    FOREIGN KEY (customer_id) REFERENCES users(user_id)
+    ON DELETE CASCADE,
+  CONSTRAINT fk_reviews_product
+    FOREIGN KEY (product_id) REFERENCES products(product_id)
+    ON DELETE CASCADE,
+  CONSTRAINT uq_reviews_customer_product UNIQUE (customer_id, product_id),
+  CONSTRAINT chk_reviews_rating CHECK (rating BETWEEN 1 AND 5)
+) ENGINE=InnoDB;
