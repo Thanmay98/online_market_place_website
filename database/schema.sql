@@ -29,3 +29,16 @@ CREATE TABLE IF NOT EXISTS users (
   status      ENUM('active','blocked','pending')             NOT NULL DEFAULT 'active',
   created_at  TIMESTAMP      NOT NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB;
+
+-- ---------------------------------------------------------
+-- categories
+-- Product categories, managed by admins. Standalone table;
+-- products reference it later. `status` lets an admin retire
+-- a category without deleting it (and its products).
+-- ---------------------------------------------------------
+CREATE TABLE IF NOT EXISTS categories (
+  category_id    INT AUTO_INCREMENT PRIMARY KEY,
+  category_name  VARCHAR(100)  NOT NULL UNIQUE,
+  description    TEXT,
+  status         ENUM('active','inactive') NOT NULL DEFAULT 'active'
+) ENGINE=InnoDB;
