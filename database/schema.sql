@@ -61,3 +61,33 @@ CREATE TABLE IF NOT EXISTS addresses (
     FOREIGN KEY (user_id) REFERENCES users(user_id)
     ON DELETE CASCADE
 ) ENGINE=InnoDB;
+
+-- ---------------------------------------------------------
+-- products
+-- Items listed for sale. Each product belongs to one seller
+-- (a user) and one category.
+--   * seller FK CASCADEs:  delete a seller -> their listings go too.
+--   * category FK RESTRICTs: a category with products can't be
+--     deleted (disable it via categories.status instead).
+-- CHECK constraints stop price and stock going negative.
+-- ---------------------------------------------------------
+CREATE TABLE IF NOT EXISTS products (
+  product_id      INT AUTO_INCREMENT PRIMARY KEY,
+  seller_id       INT            NOT NULL,
+  category_id     INT            NOT NULL,
+  product_name    VARCHAR(150)   NOT NULL,
+  description     TEXT,
+  price           DECIMAL(10,2)  NOT NULL,
+  stock_quantity  INT            NOT NULL DEFAULT 0,
+  image           VARCHAR(255),
+  status          ENUM('active','inactive') NOT NULL DEFAULT 'active',
+  created_at      TIMESTAMP      NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT fk_products_seller
+    FOREIGN KEY (seller_id) REFERENCES users(user_id)
+    ON DELETE CASCADE,
+  CONSTRAINT fk_products_category
+    FOREIGN KEY (category_id) REFERENCES categories(category_id)
+    ON DELETE RESTRICT,
+  CONSTRAINT chk_products_price CHECK (price >= 0),
+  CONSTRAINT chk_products_stock CHECK (stock_quantity >= 0)
+) ENGINE=InnoDB;
