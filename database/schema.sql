@@ -129,3 +129,57 @@ CREATE TABLE IF NOT EXISTS cart_items (
   CONSTRAINT uq_cart_items_cart_product UNIQUE (cart_id, product_id),
   CONSTRAINT chk_cart_items_qty CHECK (quantity > 0)
 ) ENGINE=InnoDB;
+
+-- ---------------------------------------------------------
+-- orders
+-- A placed order (the checkout result). It's a financial
+-- record, so customer_id uses RESTRICT: you can't delete a
+-- customer who has orders, protecting sales history/reports.
+-- shipping_address is stored as text (a snapshot), not an FK
+-- to addresses, so the order keeps the exact address it
+-- shipped to even if the customer later edits or deletes it.
+-- ---------------------------------------------------------
+CREATE TABLE IF NOT EXISTS orders (
+  order_id         INT AUTO_INCREMENT PRIMARY KEY,
+  customer_id      INT            NOT NULL,
+  total_amount     DECIMAL(10,2)  NOT NULL,
+  shipping_address VARCHAR(255)   NOT NULL,
+  order_status     ENUM('pending','confirmed','shipped','delivered','cancelled') NOT NULL DEFAULT 'pending',
+  payment_status   ENUM('pending','paid','failed','refunded')                    NOT NULL DEFAULT 'pending',
+  order_date       TIMESTAMP      NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT fk_orders_customer
+    FOREIGN KEY (customer_id) REFERENCES users(user_id)
+    ON DELETE RESTRICT,
+  CONSTRAINT chk_orders_total CHECK (total_amount >= 0)
+) ENGINE=InnoDB;
+
+-- ---------------------------------------------------------
+-- order_items
+-- The lines of an order (one order -> many items). Because an
+-- order can hold products from MULTIPLE sellers, each line
+-- records its own seller_id, so a seller can be shown exactly
+-- their lines. price and subtotal are snapshots taken at
+-- purchase time, so the record stays stable even if the
+-- product's price later changes. RESTRICT on product and
+-- seller protects order history from being erased.
+-- ---------------------------------------------------------
+CREATE TABLE IF NOT EXISTS order_items (
+  order_item_id  INT AUTO_INCREMENT PRIMARY KEY,
+  order_id       INT            NOT NULL,
+  product_id     INT            NOT NULL,
+  seller_id      INT            NOT NULL,
+  quantity       INT            NOT NULL,
+  price          DECIMAL(10,2)  NOT NULL,
+  subtotal       DECIMAL(10,2)  NOT NULL,
+  CONSTRAINT fk_order_items_order
+    FOREIGN KEY (order_id) REFERENCES orders(order_id)
+    ON DELETE CASCADE,
+  CONSTRAINT fk_order_items_product
+    FOREIGN KEY (product_id) REFERENCES products(product_id)
+    ON DELETE RESTRICT,
+  CONSTRAINT fk_order_items_seller
+    FOREIGN KEY (seller_id) REFERENCES users(user_id)
+    ON DELETE RESTRICT,
+  CONSTRAINT chk_order_items_qty CHECK (quantity > 0),
+  CONSTRAINT chk_order_items_amounts CHECK (price >= 0 AND subtotal >= 0)
+) ENGINE=InnoDB;
