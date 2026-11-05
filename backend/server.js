@@ -2,10 +2,16 @@
 const express = require("express");
 const cors = require("cors");
 
+const products = require("./products");
+
+const {
+    getWishlist,
+    addToWishlist,
+    removeFromWishlist
+} = require("./wishlist");
+
 const app = express();
 const PORT = 3000;
-
-const products = require("./products");
 
 app.use(cors());
 app.use(express.json());
@@ -27,7 +33,7 @@ app.get("/api/products", (req, res) => {
     });
 });
 
-// Get product by ID
+// Get product details
 app.get("/api/products/:id", (req, res) => {
     const productId = Number(req.params.id);
 
@@ -43,6 +49,64 @@ app.get("/api/products/:id", (req, res) => {
     res.status(200).json({
         success: true,
         product: product
+    });
+});
+
+// Get wishlist
+app.get("/api/wishlist", (req, res) => {
+    const wishlistProducts = getWishlist();
+
+    res.status(200).json({
+        success: true,
+        count: wishlistProducts.length,
+        products: wishlistProducts
+    });
+});
+
+// Add product to wishlist
+app.post("/api/wishlist", (req, res) => {
+    const productId = Number(req.body?.productId);
+
+    if (!Number.isInteger(productId) || productId <= 0) {
+        return res.status(400).json({
+            success: false,
+            message: "Valid productId is required"
+        });
+    }
+
+    const result = addToWishlist(productId);
+
+    if (result.error) {
+        return res.status(result.status).json({
+            success: false,
+            message: result.error
+        });
+    }
+
+    res.status(201).json(result);
+});
+
+// Remove product from wishlist
+app.delete("/api/wishlist/:id", (req, res) => {
+    const productId = Number(req.params.id);
+
+    const result = removeFromWishlist(productId);
+
+    if (result.error) {
+        return res.status(result.status).json({
+            success: false,
+            message: result.error
+        });
+    }
+
+    res.status(200).json(result);
+});
+
+// Handle unknown routes
+app.use((req, res) => {
+    res.status(404).json({
+        success: false,
+        message: "API endpoint not found"
     });
 });
 
