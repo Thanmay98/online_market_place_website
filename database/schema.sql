@@ -208,3 +208,41 @@ CREATE TABLE IF NOT EXISTS reviews (
   CONSTRAINT uq_reviews_customer_product UNIQUE (customer_id, product_id),
   CONSTRAINT chk_reviews_rating CHECK (rating BETWEEN 1 AND 5)
 ) ENGINE=InnoDB;
+
+-- ---------------------------------------------------------
+-- admin_permissions
+-- Super Admin grants named permissions to admin users
+-- (one admin -> many permissions). UNIQUE(admin, name) stops
+-- the same permission being granted twice. Deleting the admin
+-- removes their permission rows.
+-- ---------------------------------------------------------
+CREATE TABLE IF NOT EXISTS admin_permissions (
+  permission_id    INT AUTO_INCREMENT PRIMARY KEY,
+  admin_id         INT          NOT NULL,
+  permission_name  VARCHAR(100) NOT NULL,
+  CONSTRAINT fk_admin_permissions_admin
+    FOREIGN KEY (admin_id) REFERENCES users(user_id)
+    ON DELETE CASCADE,
+  CONSTRAINT uq_admin_permissions UNIQUE (admin_id, permission_name)
+) ENGINE=InnoDB;
+
+-- ---------------------------------------------------------
+-- system_logs
+-- Audit trail of actions across the marketplace. user_id is
+-- nullable with ON DELETE SET NULL, so a log entry SURVIVES
+-- even if the user who caused it is later deleted (the whole
+-- point of an audit log). Indexed on created_at for the
+-- date-range filtering the spec asks for.
+-- ---------------------------------------------------------
+CREATE TABLE IF NOT EXISTS system_logs (
+  log_id       BIGINT AUTO_INCREMENT PRIMARY KEY,
+  user_id      INT,
+  action       VARCHAR(100)  NOT NULL,
+  description  TEXT,
+  ip_address   VARCHAR(45),
+  created_at   TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT fk_system_logs_user
+    FOREIGN KEY (user_id) REFERENCES users(user_id)
+    ON DELETE SET NULL,
+  INDEX idx_system_logs_created (created_at)
+) ENGINE=InnoDB;
