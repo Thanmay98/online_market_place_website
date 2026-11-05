@@ -1,0 +1,215 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Marketly - Add Product</title>
+
+<style>
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: Arial, sans-serif;
+}
+
+body {
+    background: #f7f8fc;
+    color: #172033;
+}
+
+header {
+    background: white;
+    padding: 18px 7%;
+    display: flex;
+    justify-content: space-between;
+    border-bottom: 1px solid #e8eaf1;
+}
+
+.logo {
+    color: #4f46e5;
+    font-size: 25px;
+    font-weight: bold;
+}
+
+header a {
+    color: #4f46e5;
+    text-decoration: none;
+    font-weight: bold;
+}
+
+.container {
+    max-width: 650px;
+    margin: 40px auto;
+    padding: 30px;
+    background: white;
+    border-radius: 15px;
+    border: 1px solid #e8eaf1;
+}
+
+h1 {
+    margin-bottom: 10px;
+}
+
+.subtitle {
+    color: #687386;
+    margin-bottom: 25px;
+}
+
+label {
+    display: block;
+    margin: 15px 0 7px;
+    font-weight: bold;
+    font-size: 14px;
+}
+
+input, select, textarea {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    outline: none;
+}
+
+input:focus, select:focus, textarea:focus {
+    border-color: #4f46e5;
+}
+
+textarea {
+    resize: vertical;
+    min-height: 90px;
+}
+
+button {
+    width: 100%;
+    padding: 13px;
+    margin-top: 22px;
+    background: #4f46e5;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 16px;
+    cursor: pointer;
+}
+
+button:hover {
+    background: #3730a3;
+}
+
+#message {
+    margin-top: 15px;
+    text-align: center;
+    font-size: 14px;
+}
+
+@media(max-width: 600px) {
+    .container {
+        margin: 20px;
+        padding: 22px;
+    }
+}
+</style>
+</head>
+
+<body>
+
+<header>
+    <div class="logo">marketly.</div>
+    <a href="seller_dashboard.html">← Dashboard</a>
+</header>
+
+<div class="container">
+
+    <h1>Add New Product 📦</h1>
+    <p class="subtitle">Enter the details of your product below.</p>
+
+    <form id="productForm">
+
+        <label>Product Name</label>
+        <input type="text" id="name" placeholder="Enter product name" required>
+
+        <label>Category</label>
+        <select id="category" required>
+            <option value="">Select category</option>
+            <option>Electronics</option>
+            <option>Fashion</option>
+            <option>Home</option>
+            <option>Accessories</option>
+        </select>
+
+        <label>Product Description</label>
+        <textarea id="description" placeholder="Describe your product" required></textarea>
+
+        <label>Price (₹)</label>
+        <input type="number" id="price" min="1" placeholder="Enter price" required>
+
+        <label>Stock Quantity</label>
+        <input type="number" id="stock" min="0" placeholder="Enter available stock" required>
+
+        <label>Product Image</label>
+        <input type="file" id="image" accept="image/*">
+
+        <button type="submit">Add Product</button>
+
+        <p id="message"></p>
+
+    </form>
+
+</div>
+
+<script>
+
+document.getElementById("productForm").addEventListener("submit", function(e) {
+
+    e.preventDefault();
+
+    const name = document.getElementById("name").value.trim();
+    const category = document.getElementById("category").value;
+    const description = document.getElementById("description").value.trim();
+    const price = Number(document.getElementById("price").value);
+    const stock = Number(document.getElementById("stock").value);
+    const image = document.getElementById("image").files[0];
+
+    const message = document.getElementById("message");
+
+    if (!name || !category || !description) {
+        message.style.color = "red";
+        message.textContent = "Please fill in all required fields.";
+        return;
+    }
+
+    if (price <= 0 || !Number.isFinite(price)) {
+        message.style.color = "red";
+        message.textContent = "Enter a valid product price.";
+        return;
+    }
+
+    if (!Number.isInteger(stock) || stock < 0) {
+        message.style.color = "red";
+        message.textContent = "Enter a valid stock quantity.";
+        return;
+    }
+
+    const product = {
+        name,
+        category,
+        description,
+        price,
+        stock,
+        image: image ? image.name : "No image uploaded"
+    };
+
+    console.log("New Product:", product);
+
+    message.style.color = "green";
+    message.textContent = "Product added successfully!";
+
+    document.getElementById("productForm").reset();
+
+});
+
+</script>
+
+</body>
+</html>

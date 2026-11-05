@@ -1,0 +1,224 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Marketly - Seller Dashboard</title>
+
+<style>
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: Arial, sans-serif;
+}
+
+body {
+    background: #f7f8fc;
+    color: #172033;
+}
+
+header {
+    background: white;
+    padding: 18px 7%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid #e8eaf1;
+}
+
+.logo {
+    color: #4f46e5;
+    font-size: 25px;
+    font-weight: bold;
+}
+
+header a {
+    text-decoration: none;
+    color: #4f46e5;
+    font-weight: bold;
+}
+
+main {
+    max-width: 1100px;
+    margin: 35px auto;
+    padding: 0 20px;
+}
+
+.welcome {
+    background: linear-gradient(120deg, #eef2ff, #f5f3ff);
+    padding: 30px;
+    border-radius: 15px;
+    margin-bottom: 25px;
+}
+
+.welcome p {
+    color: #687386;
+    margin-top: 10px;
+}
+
+.stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 18px;
+    margin-bottom: 30px;
+}
+
+.card {
+    background: white;
+    padding: 23px;
+    border-radius: 12px;
+    border: 1px solid #e8eaf1;
+}
+
+.card p {
+    color: #687386;
+    margin-bottom: 12px;
+}
+
+.card h2 {
+    color: #4f46e5;
+    font-size: 28px;
+}
+
+.section {
+    background: white;
+    padding: 25px;
+    border-radius: 12px;
+    border: 1px solid #e8eaf1;
+    margin-bottom: 22px;
+}
+
+.section h2 {
+    margin-bottom: 20px;
+}
+
+.actions {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.btn {
+    background: #4f46e5;
+    color: white;
+    padding: 12px 18px;
+    border-radius: 8px;
+    text-decoration: none;
+}
+
+.btn:hover {
+    background: #3730a3;
+}
+
+.order {
+    padding: 15px 0;
+    border-bottom: 1px solid #eee;
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+.status {
+    color: #d97706;
+    font-weight: bold;
+}
+
+@media(max-width: 650px) {
+    .stats {
+        grid-template-columns: 1fr;
+    }
+
+    header {
+        flex-wrap: wrap;
+        gap: 12px;
+    }
+}
+</style>
+</head>
+
+<body>
+
+<header>
+    <div class="logo">marketly.</div>
+    <nav>
+        <a href="index.html">Home</a>
+        &nbsp;&nbsp;
+        <a href="login.html">Logout</a>
+    </nav>
+</header>
+
+<main>
+
+    <div class="welcome">
+        <h1>Seller Dashboard 👋</h1>
+        <p>Manage your products, track orders and monitor your sales.</p>
+    </div>
+
+    <div class="stats">
+        <div class="card">
+            <p>Total Products</p>
+            <h2 id="products">12</h2>
+        </div>
+
+        <div class="card">
+            <p>Total Orders</p>
+            <h2 id="orders">28</h2>
+        </div>
+
+        <div class="card">
+            <p>Total Sales</p>
+            <h2 id="sales">₹24,500</h2>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>Quick Actions</h2>
+
+        <div class="actions">
+            <a href="seller_products.html" class="btn">My Products</a>
+            <a href="add_product.html" class="btn">Add Product</a>
+            <a href="seller_orders.html" class="btn">Manage Orders</a>
+            <a href="seller_reports.html" class="btn">View Reports</a>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>Recent Orders</h2>
+
+        <div class="order">
+            <span>Order #1001 - Wireless Headphones</span>
+            <span class="status">Processing</span>
+        </div>
+
+        <div class="order">
+            <span>Order #1002 - Smart Watch</span>
+            <span class="status">Shipped</span>
+        </div>
+
+        <div class="order">
+            <span>Order #1003 - Backpack</span>
+            <span class="status">Delivered</span>
+        </div>
+    </div>
+
+</main>
+
+<script>
+    // Sample seller dashboard data
+
+    const seller = {
+        products: 12,
+        orders: 28,
+        sales: 24500
+    };
+
+    document.getElementById("products").textContent = seller.products;
+    document.getElementById("orders").textContent = seller.orders;
+    document.getElementById("sales").textContent =
+        "₹" + seller.sales.toLocaleString("en-IN");
+</script>
+
+</body>
+</html>

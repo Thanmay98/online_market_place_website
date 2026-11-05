@@ -1,0 +1,135 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Product Details | Marketly</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: Arial, sans-serif; }
+        body { background: #f8fafc; color: #1e293b; }
+        header { background: #172554; color: white; padding: 20px 5%; }
+        header a { color: white; text-decoration: none; }
+        main { max-width: 1000px; margin: 40px auto; padding: 20px; }
+        .product { display: grid; grid-template-columns: 1fr 1fr; gap: 35px; background: white; padding: 25px; border-radius: 12px; }
+        .product img { width: 100%; height: 350px; object-fit: cover; border-radius: 10px; background: #e2e8f0; }
+        .details { padding: 15px 0; }
+        .category { color: #2563eb; margin-bottom: 12px; }
+        h1 { margin-bottom: 15px; }
+        .price { color: #1d4ed8; font-size: 28px; font-weight: bold; margin: 18px 0; }
+        .description { color: #64748b; line-height: 1.7; margin-bottom: 20px; }
+        .stock { color: #15803d; margin-bottom: 20px; font-weight: bold; }
+        button { background: #2563eb; color: white; border: none; padding: 13px 22px; border-radius: 7px; cursor: pointer; font-size: 15px; }
+        button:hover { background: #1d4ed8; }
+        #message { margin-top: 15px; color: green; }
+        @media(max-width: 650px) { .product { grid-template-columns: 1fr; } .product img { height: 250px; } }
+    </style>
+</head>
+<body>
+    <header>
+        <a href="index.html">← Back to Marketplace</a>
+    </header>
+
+    <main>
+        <div class="product">
+            <img id="productImage" src="https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=700" alt="Product image">
+
+            <div class="details">
+                <p class="category" id="category">Electronics</p>
+                <h1 id="productName">Wireless Headphones</h1>
+                <p class="price" id="productPrice">₹1,499</p>
+
+                <p class="description" id="productDescription">
+                    Experience high-quality sound with these comfortable wireless headphones.
+                    Designed for everyday use with excellent audio performance.
+                </p>
+
+                <p class="stock" id="stockStatus">In Stock</p>
+
+                <button id="addToCart">Add to Cart</button>
+                <p id="message"></p>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        const products = [
+            {
+                id: 1,
+                name: "Wireless Headphones",
+                category: "Electronics",
+                price: 1499,
+                description: "Experience high-quality sound with comfortable wireless headphones. Perfect for music, calls and everyday use.",
+                image: "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=700",
+                stock: 15
+            },
+            {
+                id: 2,
+                name: "Smart Watch",
+                category: "Electronics",
+                price: 2499,
+                description: "A stylish smartwatch with useful everyday features and activity tracking.",
+                image: "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=700",
+                stock: 10
+            },
+            {
+                id: 3,
+                name: "Casual Shoes",
+                category: "Fashion",
+                price: 1999,
+                description: "Comfortable casual shoes designed for daily wear.",
+                image: "https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=700",
+                stock: 0
+            }
+        ];
+
+        const params = new URLSearchParams(window.location.search);
+        const productId = Number(params.get("id")) || 1;
+        const product = products.find(item => item.id === productId);
+
+        if (product) {
+            document.getElementById("productName").textContent = product.name;
+            document.getElementById("category").textContent = product.category;
+            document.getElementById("productPrice").textContent = "₹" + product.price.toLocaleString("en-IN");
+            document.getElementById("productDescription").textContent = product.description;
+            document.getElementById("productImage").src = product.image;
+
+            const button = document.getElementById("addToCart");
+
+            if (product.stock > 0) {
+                document.getElementById("stockStatus").textContent = "In Stock: " + product.stock + " available";
+            } else {
+                document.getElementById("stockStatus").textContent = "Out of Stock";
+                document.getElementById("stockStatus").style.color = "red";
+                button.disabled = true;
+                button.textContent = "Out of Stock";
+            }
+
+            button.addEventListener("click", function() {
+                const cart = JSON.parse(localStorage.getItem("marketlyCart") || "[]");
+                const existing = cart.find(item => item.id === product.id);
+
+                if (existing) {
+                    if (existing.quantity >= product.stock) {
+                        document.getElementById("message").textContent = "Maximum available stock reached.";
+                        return;
+                    }
+                    existing.quantity++;
+                } else {
+                    cart.push({
+                        id: product.id,
+                        name: product.name,
+                        price: product.price,
+                        quantity: 1
+                    });
+                }
+
+                localStorage.setItem("marketlyCart", JSON.stringify(cart));
+                document.getElementById("message").textContent = "Product added to cart successfully!";
+            });
+        } else {
+            document.querySelector("main").textContent = "Product not found.";
+        }
+    </script>
+</body>
+</html>

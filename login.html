@@ -1,0 +1,176 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Marketly - Login</title>
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: Arial, sans-serif;
+        }
+
+        body {
+            background: #f7f8fc;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .login-box {
+            background: white;
+            width: 380px;
+            padding: 35px;
+            border-radius: 15px;
+            box-shadow: 0 5px 25px #00000012;
+        }
+
+        .logo {
+            text-align: center;
+            color: #4f46e5;
+            font-size: 30px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        h2 {
+            text-align: center;
+            margin-bottom: 10px;
+            color: #172033;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #687386;
+            margin-bottom: 25px;
+            font-size: 14px;
+        }
+
+        label {
+            display: block;
+            margin: 15px 0 7px;
+            font-weight: bold;
+            font-size: 14px;
+        }
+
+        input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            outline: none;
+        }
+
+        input:focus {
+            border-color: #4f46e5;
+        }
+
+        button {
+            width: 100%;
+            padding: 13px;
+            margin-top: 22px;
+            background: #4f46e5;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #3730a3;
+        }
+
+        #message {
+            text-align: center;
+            margin-top: 15px;
+            font-size: 13px;
+            color: red;
+        }
+
+        .register {
+            text-align: center;
+            margin-top: 20px;
+            font-size: 14px;
+        }
+
+        a {
+            color: #4f46e5;
+            text-decoration: none;
+            font-weight: bold;
+        }
+
+        .home {
+            text-align: center;
+            margin-top: 20px;
+            font-size: 13px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="login-box">
+
+        <div class="logo">marketly.</div>
+
+        <h2>Welcome Back!</h2>
+        <p class="subtitle">Login to continue shopping with us.</p>
+
+        <form id="loginForm">
+
+            <label>Email Address</label>
+            <input type="email" id="email" placeholder="Enter your email">
+
+            <label>Password</label>
+            <input type="password" id="password" placeholder="Enter your password">
+
+            <button type="submit">Login</button>
+
+            <p id="message"></p>
+
+        </form>
+
+        <p class="register">
+            Don't have an account?
+            <a href="register.html">Register</a>
+        </p>
+
+        <p class="home">
+            <a href="index.html">← Back to Home</a>
+        </p>
+
+    </div>
+
+    <script>
+        document.getElementById("loginForm").addEventListener("submit", function(e) {
+
+            e.preventDefault();
+
+            const email = document.getElementById("email").value.trim();
+            const password = document.getElementById("password").value;
+            const message = document.getElementById("message");
+
+            if (email === "" || password === "") {
+                message.textContent = "Please fill in all fields.";
+                return;
+            }
+
+            if (password.length < 6) {
+                message.textContent = "Password must contain at least 6 characters.";
+                return;
+            }
+
+            message.style.color = "green";
+            message.textContent = "Form validated! Backend login integration is next.";
+
+        });
+    </script>
+
+</body>
+</html>

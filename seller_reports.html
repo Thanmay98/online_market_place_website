@@ -1,0 +1,255 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Marketly - Seller Reports</title>
+
+<style>
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: Arial, sans-serif;
+}
+
+body {
+    background: #f7f8fc;
+    color: #172033;
+}
+
+header {
+    background: white;
+    padding: 18px 7%;
+    display: flex;
+    justify-content: space-between;
+    border-bottom: 1px solid #e8eaf1;
+}
+
+.logo {
+    color: #4f46e5;
+    font-size: 25px;
+    font-weight: bold;
+}
+
+header a {
+    color: #4f46e5;
+    text-decoration: none;
+    font-weight: bold;
+}
+
+main {
+    max-width: 1100px;
+    margin: 40px auto;
+    padding: 0 20px;
+}
+
+.subtitle {
+    color: #687386;
+    margin: 10px 0 25px;
+}
+
+.stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 18px;
+}
+
+.card, .section {
+    background: white;
+    padding: 25px;
+    border: 1px solid #e8eaf1;
+    border-radius: 12px;
+}
+
+.card p {
+    color: #687386;
+    margin-bottom: 12px;
+}
+
+.card h2 {
+    color: #4f46e5;
+    font-size: 28px;
+}
+
+.section {
+    margin-top: 25px;
+}
+
+.section h2 {
+    margin-bottom: 20px;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+th, td {
+    padding: 14px;
+    text-align: left;
+    border-bottom: 1px solid #eee;
+}
+
+th {
+    color: #687386;
+    background: #f9fafb;
+}
+
+.chart {
+    display: flex;
+    align-items: end;
+    justify-content: space-around;
+    height: 200px;
+    gap: 15px;
+    padding-top: 20px;
+}
+
+.bar-group {
+    text-align: center;
+    flex: 1;
+}
+
+.bar {
+    background: #4f46e5;
+    border-radius: 7px 7px 0 0;
+    width: 100%;
+    max-width: 55px;
+    margin: auto;
+}
+
+.bar-group span {
+    display: block;
+    margin-top: 8px;
+    font-size: 13px;
+    color: #687386;
+}
+
+@media(max-width: 650px) {
+    .stats {
+        grid-template-columns: 1fr;
+    }
+
+    .section {
+        overflow-x: auto;
+    }
+
+    table {
+        min-width: 450px;
+    }
+}
+</style>
+</head>
+
+<body>
+
+<header>
+    <div class="logo">marketly.</div>
+    <a href="seller_dashboard.html">← Dashboard</a>
+</header>
+
+<main>
+
+    <h1>Sales Reports 📊</h1>
+    <p class="subtitle">Monitor your business performance and sales.</p>
+
+    <div class="stats">
+
+        <div class="card">
+            <p>Total Revenue</p>
+            <h2>₹24,500</h2>
+        </div>
+
+        <div class="card">
+            <p>Total Orders</p>
+            <h2>28</h2>
+        </div>
+
+        <div class="card">
+            <p>Products Sold</p>
+            <h2>45</h2>
+        </div>
+
+    </div>
+
+    <div class="section">
+
+        <h2>Monthly Sales Overview</h2>
+
+        <div class="chart">
+
+            <div class="bar-group">
+                <div class="bar" style="height:70px"></div>
+                <span>Jan</span>
+            </div>
+
+            <div class="bar-group">
+                <div class="bar" style="height:110px"></div>
+                <span>Feb</span>
+            </div>
+
+            <div class="bar-group">
+                <div class="bar" style="height:90px"></div>
+                <span>Mar</span>
+            </div>
+
+            <div class="bar-group">
+                <div class="bar" style="height:150px"></div>
+                <span>Apr</span>
+            </div>
+
+            <div class="bar-group">
+                <div class="bar" style="height:180px"></div>
+                <span>May</span>
+            </div>
+
+            <div class="bar-group">
+                <div class="bar" style="height:125px"></div>
+                <span>Jun</span>
+            </div>
+
+        </div>
+
+    </div>
+
+    <div class="section">
+
+        <h2>Top Selling Products</h2>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Product</th>
+                    <th>Units Sold</th>
+                    <th>Revenue</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                <tr>
+                    <td>Wireless Headphones</td>
+                    <td>18</td>
+                    <td>₹8,000</td>
+                </tr>
+
+                <tr>
+                    <td>Everyday Backpack</td>
+                    <td>15</td>
+                    <td>₹7,500</td>
+                </tr>
+
+                <tr>
+                    <td>Smart Watch</td>
+                    <td>12</td>
+                    <td>₹9,000</td>
+                </tr>
+            </tbody>
+        </table>
+
+    </div>
+
+</main>
+
+</body>
+</html>

@@ -1,0 +1,273 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Marketly - My Orders</title>
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: Arial, sans-serif;
+        }
+
+        body {
+            background: #f7f8fc;
+            color: #172033;
+        }
+
+        header {
+            background: white;
+            padding: 18px 7%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #e8eaf1;
+        }
+
+        .logo {
+            color: #4f46e5;
+            font-size: 25px;
+            font-weight: bold;
+        }
+
+        header a {
+            text-decoration: none;
+            color: #4f46e5;
+            font-weight: bold;
+        }
+
+        main {
+            max-width: 1100px;
+            margin: 40px auto;
+            padding: 0 20px;
+        }
+
+        h1 {
+            margin-bottom: 8px;
+        }
+
+        .subtitle {
+            color: #687386;
+            margin-bottom: 25px;
+        }
+
+        .orders-container {
+            background: white;
+            padding: 22px;
+            border-radius: 12px;
+            border: 1px solid #e8eaf1;
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 650px;
+        }
+
+        th, td {
+            padding: 16px;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+        }
+
+        th {
+            color: #687386;
+            font-size: 13px;
+            background: #f9fafb;
+        }
+
+        .status {
+            padding: 6px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .delivered {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .pending {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .cancelled {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .cancel-btn {
+            padding: 7px 12px;
+            border: none;
+            background: #fee2e2;
+            color: #dc2626;
+            border-radius: 7px;
+            cursor: pointer;
+        }
+
+        .cancel-btn:hover {
+            background: #fecaca;
+        }
+
+        .empty {
+            text-align: center;
+            padding: 35px;
+            color: #687386;
+        }
+
+        .shop-btn {
+            display: inline-block;
+            margin-top: 15px;
+            background: #4f46e5;
+            color: white;
+            padding: 11px 17px;
+            border-radius: 8px;
+            text-decoration: none;
+        }
+
+        @media(max-width: 600px) {
+            header {
+                padding: 18px;
+            }
+
+            main {
+                margin-top: 25px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+<header>
+    <div class="logo">marketly.</div>
+    <a href="customer_dashboard.html">← Dashboard</a>
+</header>
+
+<main>
+
+    <h1>My Orders 📦</h1>
+    <p class="subtitle">View and manage your recent purchases.</p>
+
+    <div class="orders-container">
+
+        <table id="ordersTable">
+            <thead>
+                <tr>
+                    <th>Order ID</th>
+                    <th>Product</th>
+                    <th>Date</th>
+                    <th>Amount</th>
+                    <th>Payment</th>
+                    <th>Status</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+
+            <tbody id="ordersBody"></tbody>
+        </table>
+
+        <div id="emptyMessage" class="empty" style="display:none">
+            <h3>No orders yet!</h3>
+            <p>Start shopping to see your orders here.</p>
+            <a href="index.html" class="shop-btn">Browse Products</a>
+        </div>
+
+    </div>
+
+</main>
+
+<script>
+
+    // Sample order data
+    let orders = [
+        {
+            id: 1001,
+            product: "Wireless Headphones",
+            date: "05-11-2026",
+            amount: 1499,
+            payment: "Paid",
+            status: "Delivered"
+        },
+        {
+            id: 1002,
+            product: "Everyday Backpack",
+            date: "05-11-2026",
+            amount: 899,
+            payment: "Pending",
+            status: "Processing"
+        }
+    ];
+
+    function displayOrders() {
+
+        const tbody = document.getElementById("ordersBody");
+        const empty = document.getElementById("emptyMessage");
+        const table = document.getElementById("ordersTable");
+
+        tbody.innerHTML = "";
+
+        if (orders.length === 0) {
+            table.style.display = "none";
+            empty.style.display = "block";
+            return;
+        }
+
+        table.style.display = "table";
+        empty.style.display = "none";
+
+        orders.forEach((order, index) => {
+
+            let statusClass = order.status === "Delivered"
+                ? "delivered"
+                : order.status === "Cancelled"
+                ? "cancelled"
+                : "pending";
+
+            tbody.innerHTML += `
+                <tr>
+                    <td>#${order.id}</td>
+                    <td>${order.product}</td>
+                    <td>${order.date}</td>
+                    <td>₹${order.amount}</td>
+                    <td>${order.payment}</td>
+                    <td>
+                        <span class="status ${statusClass}">
+                            ${order.status}
+                        </span>
+                    </td>
+                    <td>
+                        ${order.status === "Processing"
+                            ? `<button class="cancel-btn" onclick="cancelOrder(${index})">Cancel</button>`
+                            : "-"}
+                    </td>
+                </tr>
+            `;
+        });
+    }
+
+    function cancelOrder(index) {
+
+        if (confirm("Are you sure you want to cancel this order?")) {
+
+            orders[index].status = "Cancelled";
+
+            displayOrders();
+
+            alert("Order cancelled successfully!");
+        }
+    }
+
+    displayOrders();
+
+</script>
+
+</body>
+</html>
