@@ -158,14 +158,14 @@
         <a href="index.html">Home</a>
         <a href="orders.html">My Orders</a>
         <a href="profile.html">Profile</a>
-        <a href="login.html">Logout</a>
+        <a href="#" id="logout">Logout</a>
     </nav>
 </header>
 
 <main>
 
     <div class="welcome">
-        <h1>Welcome Back, Customer! 👋</h1>
+        <h1 id="welcome">Welcome Back! 👋</h1>
         <p>Manage your orders and discover products you love.</p>
     </div>
 
@@ -202,26 +202,54 @@
     <div class="section">
         <h2>Recent Orders</h2>
 
-        <div class="order">
-            <span>No orders placed yet.</span>
-            <span class="status">No orders</span>
-        </div>
+        <div id="recentOrders"></div>
 
     </div>
 
 </main>
 
 <script>
-    // Sample dashboard data
-    const orders = [];
+    function getUser() {
+        try { return JSON.parse(localStorage.getItem("marketlyUser") || "null"); }
+        catch (e) { return null; }
+    }
 
-    document.getElementById("totalOrders").textContent = orders.length;
+    const user = getUser();
+    if (!user || user.role !== "customer") { location.href = "login.html"; }
 
-    document.getElementById("pendingOrders").textContent =
-        orders.filter(order => order.status === "Pending").length;
+    document.getElementById("welcome").textContent = "Welcome back, " + user.name + "! 👋";
+    document.getElementById("logout").addEventListener("click", e => {
+        e.preventDefault();
+        localStorage.removeItem("marketlyUser");
+        location.href = "index.html";
+    });
 
-    document.getElementById("completedOrders").textContent =
-        orders.filter(order => order.status === "Completed").length;
+    const money = n => "₹" + Number(n || 0).toLocaleString("en-IN");
+
+    async function loadDashboard() {
+        let orders = [];
+        try {
+            const res = await fetch("/api/orders", { headers: { "x-user-id": user.user_id } }).then(r => r.json());
+            orders = res.orders || [];
+        } catch (e) {}
+
+        document.getElementById("totalOrders").textContent = orders.length;
+        document.getElementById("pendingOrders").textContent =
+            orders.filter(o => ["pending", "confirmed", "shipped"].includes(o.order_status)).length;
+        document.getElementById("completedOrders").textContent =
+            orders.filter(o => o.order_status === "delivered").length;
+
+        const recent = document.getElementById("recentOrders");
+        recent.innerHTML = orders.length
+            ? orders.slice(0, 5).map(o => `
+                <div class="order">
+                    <span>Order #${o.order_id} · ${money(o.total_amount)} · ${new Date(o.order_date).toLocaleDateString("en-IN")}</span>
+                    <span class="status">${o.order_status}</span>
+                </div>`).join("")
+            : `<div class="order"><span>No orders placed yet.</span><span class="status">No orders</span></div>`;
+    }
+
+    loadDashboard();
 </script>
 
 </body>

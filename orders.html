@@ -186,33 +186,28 @@
 
 <script>
 
-    // Sample order data
-    let orders = [
-        {
-            id: 1001,
-            product: "Wireless Headphones",
-            date: "05-11-2026",
-            amount: 1499,
-            payment: "Paid",
-            status: "Delivered"
-        },
-        {
-            id: 1002,
-            product: "Everyday Backpack",
-            date: "05-11-2026",
-            amount: 899,
-            payment: "Pending",
-            status: "Processing"
-        }
-    ];
+    function getUser() {
+        try { return JSON.parse(localStorage.getItem("marketlyUser") || "null"); }
+        catch (e) { return null; }
+    }
 
-    function displayOrders() {
+    const user = getUser();
+    if (!user || user.role !== "customer") { location.href = "login.html"; }
 
+    const money = n => "₹" + Number(n || 0).toLocaleString("en-IN");
+    const fmtDate = s => new Date(s).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
+    const statusClass = s => s === "delivered" ? "delivered" : s === "cancelled" ? "cancelled" : "pending";
+
+    async function loadOrders() {
         const tbody = document.getElementById("ordersBody");
         const empty = document.getElementById("emptyMessage");
         const table = document.getElementById("ordersTable");
 
-        tbody.innerHTML = "";
+        let orders = [];
+        try {
+            const res = await fetch("/api/orders", { headers: { "x-user-id": user.user_id } }).then(r => r.json());
+            orders = res.orders || [];
+        } catch (e) {}
 
         if (orders.length === 0) {
             table.style.display = "none";
@@ -223,49 +218,36 @@
         table.style.display = "table";
         empty.style.display = "none";
 
-        orders.forEach((order, index) => {
+        tbody.innerHTML = orders.map(o => `
+            <tr>
+                <td>#${o.order_id}</td>
+                <td>${o.item_count} item${o.item_count == 1 ? "" : "s"}</td>
+                <td>${fmtDate(o.order_date)}</td>
+                <td>${money(o.total_amount)}</td>
+                <td>${o.payment_status}</td>
+                <td><span class="status ${statusClass(o.order_status)}">${o.order_status}</span></td>
+                <td>${["pending", "confirmed"].includes(o.order_status)
+                        ? `<button class="cancel-btn" data-cancel="${o.order_id}">Cancel</button>`
+                        : "-"}</td>
+            </tr>
+        `).join("");
 
-            let statusClass = order.status === "Delivered"
-                ? "delivered"
-                : order.status === "Cancelled"
-                ? "cancelled"
-                : "pending";
-
-            tbody.innerHTML += `
-                <tr>
-                    <td>#${order.id}</td>
-                    <td>${order.product}</td>
-                    <td>${order.date}</td>
-                    <td>₹${order.amount}</td>
-                    <td>${order.payment}</td>
-                    <td>
-                        <span class="status ${statusClass}">
-                            ${order.status}
-                        </span>
-                    </td>
-                    <td>
-                        ${order.status === "Processing"
-                            ? `<button class="cancel-btn" onclick="cancelOrder(${index})">Cancel</button>`
-                            : "-"}
-                    </td>
-                </tr>
-            `;
-        });
+        document.querySelectorAll("[data-cancel]").forEach(btn =>
+            btn.addEventListener("click", () => cancelOrder(Number(btn.dataset.cancel))));
     }
 
-    function cancelOrder(index) {
-
-        if (confirm("Are you sure you want to cancel this order?")) {
-
-            orders[index].status = "Cancelled";
-
-            displayOrders();
-
-            alert("Order cancelled successfully!");
-        }
+    async function cancelOrder(id) {
+        if (!confirm("Are you sure you want to cancel this order?")) return;
+        try {
+            const res = await fetch(`/api/orders/${id}/cancel`, {
+                method: "PUT", headers: { "x-user-id": user.user_id }
+            }).then(r => r.json());
+            alert(res.message || (res.success ? "Order cancelled" : "Could not cancel"));
+        } catch (e) { alert("Could not cancel order."); }
+        loadOrders();
     }
 
-    displayOrders();
+    loadOrders();
 
 </script>
 
