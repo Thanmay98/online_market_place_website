@@ -4,9 +4,9 @@ require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
 
-const pool = require("./db");
 const authRoutes = require("./routes/auth");
 const categoryRoutes = require("./routes/categories");
+const productRoutes = require("./routes/products");
 
 const app = express();
 const PORT = 3000;
@@ -17,6 +17,7 @@ app.use(express.json());
 // Routes
 app.use("/api/auth", authRoutes);
 app.use("/api/categories", categoryRoutes);
+app.use("/api/products", productRoutes);
 
 // Health check
 app.get("/api/health", (req, res) => {
@@ -24,74 +25,6 @@ app.get("/api/health", (req, res) => {
         status: "success",
         message: "Marketly backend is running"
     });
-});
-
-// Get all products (from the MySQL `products` table, with category name)
-app.get("/api/products", async (req, res) => {
-    try {
-        const [rows] = await pool.query(
-            `SELECT p.product_id, p.seller_id, p.category_id, c.category_name,
-                    p.product_name, p.description, p.price, p.stock_quantity,
-                    p.image, p.status, p.created_at
-             FROM products p
-             JOIN categories c ON p.category_id = c.category_id
-             ORDER BY p.product_id`
-        );
-
-        res.status(200).json({
-            success: true,
-            count: rows.length,
-            products: rows
-        });
-    } catch (err) {
-        console.error("GET /api/products failed:", err.message);
-        res.status(500).json({
-            success: false,
-            message: "Failed to fetch products"
-        });
-    }
-});
-
-// Get product details
-app.get("/api/products/:id", async (req, res) => {
-    const productId = Number(req.params.id);
-
-    if (!Number.isInteger(productId) || productId <= 0) {
-        return res.status(400).json({
-            success: false,
-            message: "Valid product id is required"
-        });
-    }
-
-    try {
-        const [rows] = await pool.query(
-            `SELECT p.product_id, p.seller_id, p.category_id, c.category_name,
-                    p.product_name, p.description, p.price, p.stock_quantity,
-                    p.image, p.status, p.created_at
-             FROM products p
-             JOIN categories c ON p.category_id = c.category_id
-             WHERE p.product_id = ?`,
-            [productId]
-        );
-
-        if (rows.length === 0) {
-            return res.status(404).json({
-                success: false,
-                message: "Product not found"
-            });
-        }
-
-        res.status(200).json({
-            success: true,
-            product: rows[0]
-        });
-    } catch (err) {
-        console.error("GET /api/products/:id failed:", err.message);
-        res.status(500).json({
-            success: false,
-            message: "Failed to fetch product"
-        });
-    }
 });
 
 // Handle unknown routes
