@@ -20,6 +20,7 @@
   "homepage": "https://github.com/Thanmay98/online_market_place_website#readme",
   "dependencies": {
     "cors": "^2.8.6",
-    "express": "^5.3.0"
+    "express": "^5.3.0",
+    "mysql2": "^3.11.0"
   }
 }
