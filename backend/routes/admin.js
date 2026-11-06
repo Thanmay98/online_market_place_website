@@ -5,6 +5,7 @@
 const express = require("express");
 const pool = require("../db");
 const { authenticate, authorize } = require("../middleware/auth");
+const { logActivity } = require("../log");
 
 const router = express.Router();
 router.use(authenticate, authorize("admin", "superadmin"));
@@ -66,6 +67,8 @@ async function setUserStatus(req, res, newStatus, requireRole) {
       return res.status(400).json({ success: false, message: `User is not a ${requireRole}` });
     }
     await pool.query("UPDATE users SET status = ? WHERE user_id = ?", [newStatus, userId]);
+    const logAction = newStatus === "blocked" ? "USER_BLOCKED" : "USER_ACTIVATED";
+    await logActivity(req.user.user_id, logAction, `User #${userId} set to ${newStatus}`, req);
     res.status(200).json({ success: true, message: `User status set to ${newStatus}` });
   } catch (err) {
     console.error("setUserStatus failed:", err.message);
@@ -105,6 +108,37 @@ router.get("/reports", async (req, res) => {
   } catch (err) {
     console.error("GET /api/admin/reports failed:", err.message);
     res.status(500).json({ success: false, message: "Failed to build report" });
+  }
+});
+
+// Admin: view system activity logs, with optional filters
+// (?action= ?user_id= ?from= ?to= ?limit=). LEFT JOIN so a log whose
+// user was later deleted (user_id set NULL) still shows.
+router.get("/logs", async (req, res) => {
+  const { action, user_id, from, to } = req.query;
+  let limit = Number(req.query.limit) || 100;
+  if (limit < 1) limit = 1;
+  if (limit > 500) limit = 500;
+
+  let sql =
+    `SELECT l.log_id, l.user_id, u.name AS user_name, l.action,
+            l.description, l.ip_address, l.created_at
+     FROM system_logs l
+     LEFT JOIN users u ON l.user_id = u.user_id
+     WHERE 1 = 1`;
+  const params = [];
+  if (action)  { sql += " AND l.action = ?";     params.push(action); }
+  if (user_id) { sql += " AND l.user_id = ?";    params.push(Number(user_id)); }
+  if (from)    { sql += " AND l.created_at >= ?"; params.push(from); }
+  if (to)      { sql += " AND l.created_at <= ?"; params.push(to); }
+  sql += ` ORDER BY l.created_at DESC LIMIT ${limit}`;
+
+  try {
+    const [rows] = await pool.query(sql, params);
+    res.status(200).json({ success: true, count: rows.length, logs: rows });
+  } catch (err) {
+    console.error("GET /api/admin/logs failed:", err.message);
+    res.status(500).json({ success: false, message: "Failed to fetch logs" });
   }
 });
 

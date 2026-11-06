@@ -4,6 +4,7 @@
 
 const express = require("express");
 const pool = require("../db");
+const { logActivity } = require("../log");
 
 const router = express.Router();
 
@@ -27,6 +28,7 @@ router.post("/register", async (req, res) => {
       [name, email, password, mobile || null, userRole, status]
     );
 
+    await logActivity(result.insertId, "REGISTER", `New ${userRole} registered: ${email}`, req);
     res.status(201).json({
       success: true,
       message: "Registration successful",
@@ -65,6 +67,7 @@ router.post("/login", async (req, res) => {
     }
 
     delete user.password; // never send the password back
+    await logActivity(user.user_id, "LOGIN", `${user.email} logged in`, req);
     res.status(200).json({ success: true, message: "Login successful", user });
   } catch (err) {
     console.error("POST /api/auth/login failed:", err.message);

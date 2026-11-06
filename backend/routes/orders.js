@@ -5,6 +5,7 @@
 const express = require("express");
 const pool = require("../db");
 const { authenticate, authorize } = require("../middleware/auth");
+const { logActivity } = require("../log");
 
 const router = express.Router();
 router.use(authenticate);
@@ -82,6 +83,7 @@ router.post("/", authorize("customer"), async (req, res) => {
       await conn.query("DELETE FROM cart_items WHERE cart_id = ?", [cartId]);
 
       await conn.commit();
+      await logActivity(req.user.user_id, "ORDER_PLACED", `Order #${orderId} placed, total ${total}`, req);
       res.status(201).json({ success: true, message: "Order placed", order_id: orderId, total_amount: total });
     } catch (txErr) {
       await conn.rollback();
@@ -226,6 +228,7 @@ router.put("/:id/cancel", authorize("customer"), async (req, res) => {
     await conn.query("UPDATE orders SET order_status = 'cancelled' WHERE order_id = ?", [orderId]);
 
     await conn.commit();
+    await logActivity(req.user.user_id, "ORDER_CANCELLED", `Order #${orderId} cancelled`, req);
     res.status(200).json({ success: true, message: "Order cancelled" });
   } catch (err) {
     await conn.rollback();
