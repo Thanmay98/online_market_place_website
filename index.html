@@ -322,6 +322,11 @@ h2 { margin:0; }
     color:white;
 }
 
+.add:disabled {
+    opacity:.5;
+    cursor:not-allowed;
+}
+
 .empty {
     grid-column:1/-1;
     text-align:center;
@@ -527,8 +532,7 @@ footer {
             <button id="search-btn">Search</button>
         </div>
 
-        <a href="login.html" class="auth-btn">Login</a>
-        <a href="register.html" class="auth-btn signup">Sign Up</a>
+        <span id="auth-area"></span>
 
         <button class="cart-btn" id="open-cart">
             🛒 Cart (<span id="cart-count">0</span>)
@@ -565,14 +569,13 @@ footer {
     <div class="section-head">
         <div>
             <h2>Popular products</h2>
-            <p class="sub">A few customer favourites to get you started.</p>
+            <p class="sub">Browse what's in stock right now.</p>
         </div>
 
         <select id="sort" class="sort">
             <option value="featured">Featured</option>
             <option value="low">Price: low to high</option>
             <option value="high">Price: high to low</option>
-            <option value="rating">Top rated</option>
         </select>
     </div>
 
@@ -583,7 +586,7 @@ footer {
 </main>
 
 <footer>
-    © 2026 Marketly. Demo marketplace template. Products and prices are sample data.
+    © 2026 Marketly. Built for the Web Technology assignment.
 </footer>
 
 <div class="overlay" id="overlay">
@@ -605,371 +608,222 @@ footer {
 
 <div class="toast" id="toast"></div>
 
+<script src="/js/session.js"></script>
 <script>
 
-const products = [
-
-    {id:1,name:"Wireless Headphones",category:"Electronics",price:1499,old:1999,emoji:"🎧",rating:4.8,tag:"Bestseller"},
-
-    {id:2,name:"Everyday Backpack",category:"Accessories",price:899,old:1199,emoji:"🎒",rating:4.6,tag:"Popular"},
-
-    {id:3,name:"Ceramic Coffee Mug",category:"Home",price:299,old:399,emoji:"☕",rating:4.7,tag:""},
-
-    {id:4,name:"Smart Watch",category:"Electronics",price:2199,old:2799,emoji:"⌚",rating:4.5,tag:"Deal"},
-
-    {id:5,name:"Classic Sneakers",category:"Fashion",price:1299,old:1699,emoji:"👟",rating:4.4,tag:""},
-
-    {id:6,name:"Desk Plant",category:"Home",price:249,old:349,emoji:"🪴",rating:4.8,tag:"Eco pick"},
-
-    {id:7,name:"Sunglasses",category:"Fashion",price:599,old:799,emoji:"🕶️",rating:4.3,tag:""},
-
-    {id:8,name:"Portable Speaker",category:"Electronics",price:999,old:1399,emoji:"🔊",rating:4.6,tag:"Popular"},
-
-    {id:9,name:"Water Bottle",category:"Accessories",price:399,old:499,emoji:"🥤",rating:4.5,tag:""},
-
-    {id:10,name:"Soft Cushion",category:"Home",price:449,old:599,emoji:"🛋️",rating:4.2,tag:""},
-
-    {id:11,name:"Cotton T-shirt",category:"Fashion",price:499,old:699,emoji:"👕",rating:4.4,tag:""},
-
-    {id:12,name:"Power Bank",category:"Electronics",price:799,old:999,emoji:"🔋",rating:4.7,tag:"Deal"}
-
-];
-
-const categories = [
-    "All",
-    "Electronics",
-    "Fashion",
-    "Home",
-    "Accessories"
-];
-
+// ---- state ----
+let products = [];
+let categories = ["All"];
 let activeCategory = "All";
 let query = "";
-let cart = {};
+let cartItems = [];
 
-const money = n => "₹" + n.toLocaleString("en-IN");
-
+const CAT_EMOJI = { Electronics:"🎧", Books:"📘", "Home & Kitchen":"🏠", Fashion:"👕", Accessories:"🎒" };
+const money = n => "₹" + Number(n || 0).toLocaleString("en-IN");
 const productRoot = document.getElementById("products");
 
-
-function renderCategories() {
-
-    document.getElementById("categories").innerHTML =
-        categories.map(c => `
-            <button class="category ${activeCategory === c ? 'active' : ''}"
-                data-category="${c}">
-                ${c}
-            </button>
-        `).join("");
-
-    document.querySelectorAll("[data-category]").forEach(btn => {
-
-        btn.addEventListener("click", () => {
-
-            activeCategory = btn.dataset.category;
-
-            renderCategories();
-            renderProducts();
-
-        });
-
-    });
-
+// ---- header: show the logged-in user, or login/signup ----
+function renderAuthArea() {
+    const u = Session.get();
+    const area = document.getElementById("auth-area");
+    if (u) {
+        const dash = u.role === "seller" ? "seller_dashboard.html"
+                   : (u.role === "admin" || u.role === "superadmin") ? "admin_dashboard.html"
+                   : "customer_dashboard.html";
+        area.innerHTML = `<a href="${dash}" class="auth-btn">Hi, ${u.name.split(" ")[0]}</a>
+                          <a href="#" class="auth-btn signup" id="logout">Logout</a>`;
+        document.getElementById("logout").addEventListener("click", e => { e.preventDefault(); Session.logout(); });
+    } else {
+        area.innerHTML = `<a href="login.html" class="auth-btn">Login</a>
+                          <a href="register.html" class="auth-btn signup">Sign Up</a>`;
+    }
 }
 
+// ---- products + categories from the API (AJAX) ----
+async function loadProducts() {
+    try {
+        const [pRes, cRes] = await Promise.all([
+            fetch("/api/products").then(r => r.json()),
+            fetch("/api/categories").then(r => r.json())
+        ]);
+        products = (pRes.products || []).filter(p => p.status === "active");
+        const names = (cRes.categories || []).filter(c => c.status === "active").map(c => c.category_name);
+        categories = ["All", ...names];
+    } catch (err) {
+        productRoot.innerHTML = `<div class="empty">Couldn't load products. Is the server running?</div>`;
+        return;
+    }
+    renderCategories();
+    renderProducts();
+}
+
+function renderCategories() {
+    document.getElementById("categories").innerHTML = categories.map(c => `
+        <button class="category ${activeCategory === c ? 'active' : ''}" data-category="${c}">${c}</button>
+    `).join("");
+    document.querySelectorAll("[data-category]").forEach(btn => {
+        btn.addEventListener("click", () => {
+            activeCategory = btn.dataset.category;
+            renderCategories();
+            renderProducts();
+        });
+    });
+}
 
 function renderProducts() {
-
     let list = products.filter(p =>
-
-        (activeCategory === "All" || p.category === activeCategory) &&
-
-        (p.name.toLowerCase().includes(query) ||
-         p.category.toLowerCase().includes(query))
-
+        (activeCategory === "All" || p.category_name === activeCategory) &&
+        (p.product_name.toLowerCase().includes(query) || (p.category_name || "").toLowerCase().includes(query))
     );
 
     const sort = document.getElementById("sort").value;
+    if (sort === "low")  list = list.slice().sort((a, b) => a.price - b.price);
+    if (sort === "high") list = list.slice().sort((a, b) => b.price - a.price);
 
-    if(sort === "low") list.sort((a,b) => a.price - b.price);
-
-    if(sort === "high") list.sort((a,b) => b.price - a.price);
-
-    if(sort === "rating") list.sort((a,b) => b.rating - a.rating);
-
-
-    productRoot.innerHTML = list.length ?
-
-        list.map(p => `
-
-            <article class="product">
-
-                <div class="product-img">
-
-                    ${p.tag ? `<span class="tag">${p.tag}</span>` : ""}
-
-                    <span>${p.emoji}</span>
-
+    productRoot.innerHTML = list.length ? list.map(p => `
+        <article class="product">
+            <div class="product-img">
+                ${p.stock_quantity <= 0 ? '<span class="tag" style="background:#fee2e2;color:#991b1b">Out of stock</span>' : ''}
+                <span>${CAT_EMOJI[p.category_name] || "📦"}</span>
+            </div>
+            <div class="product-body">
+                <div class="product-cat">${p.category_name || ""}</div>
+                <h3>${p.product_name}</h3>
+                <div class="price-row">
+                    <span class="price">${money(p.price)}</span>
                 </div>
-
-                <div class="product-body">
-
-                    <div class="product-cat">${p.category}</div>
-
-                    <h3>${p.name}</h3>
-
-                    <div class="rating">
-                        ★ ${p.rating}
-                        <span style="color:#9aa1ae">· Sample rating</span>
-                    </div>
-
-                    <div class="price-row">
-
-                        <span class="price">${money(p.price)}</span>
-
-                        <span class="old-price">${money(p.old)}</span>
-
-                    </div>
-
-                    <a class="details-link"
-                       href="product_details.html?id=${p.id}">
-                       View Details →
-                    </a>
-
-                    <button class="add" data-add="${p.id}">
-                        ＋ Add to cart
-                    </button>
-
-                </div>
-
-            </article>
-
-        `).join("") :
-
-        `<div class="empty">No products found. Try a different search or category.</div>`;
-
+                <a class="details-link" href="product_details.html?id=${p.product_id}">View Details →</a>
+                <button class="add" data-add="${p.product_id}" ${p.stock_quantity <= 0 ? "disabled" : ""}>＋ Add to cart</button>
+            </div>
+        </article>
+    `).join("") : `<div class="empty">No products found. Try a different search or category.</div>`;
 
     document.querySelectorAll("[data-add]").forEach(btn => {
-
-        btn.addEventListener("click", () => {
-
-            addToCart(Number(btn.dataset.add));
-
-        });
-
+        btn.addEventListener("click", () => addToCart(Number(btn.dataset.add)));
     });
-
 }
 
-
-function addToCart(id) {
-
-    cart[id] = (cart[id] || 0) + 1;
-
-    updateCart();
-
-    showToast("Added to your cart!");
-
+// ---- cart (real API) ----
+async function addToCart(id) {
+    const u = Session.get();
+    if (!u) { showToast("Please log in to add items."); setTimeout(() => location.href = "login.html", 1000); return; }
+    if (u.role !== "customer") { showToast("Only customers can add to cart."); return; }
+    try {
+        const res = await fetch("/api/cart/items", {
+            method: "POST", headers: Session.headers(),
+            body: JSON.stringify({ product_id: id, quantity: 1 })
+        }).then(r => r.json());
+        if (res.success) { showToast("Added to your cart!"); loadCart(); }
+        else showToast(res.message || "Couldn't add to cart.");
+    } catch (err) { showToast("Couldn't add to cart."); }
 }
 
+async function loadCart() {
+    const u = Session.get();
+    const countEl = document.getElementById("cart-count");
+    if (!u || u.role !== "customer") { cartItems = []; countEl.textContent = "0"; renderCart(); return; }
+    try {
+        const res = await fetch("/api/cart", { headers: Session.headers() }).then(r => r.json());
+        cartItems = res.items || [];
+    } catch (err) { cartItems = []; }
+    countEl.textContent = cartItems.reduce((a, i) => a + i.quantity, 0);
+    renderCart();
+}
 
-
-function updateCart() {
-
-    const count = Object.values(cart).reduce((a,b) => a+b, 0);
-
-    document.getElementById("cart-count").textContent = count;
-
-    const items = products.filter(p => cart[p.id]);
-
-    document.getElementById("cart-items").innerHTML = items.length ?
-
-        items.map(p => `
-
-            <div class="cart-item">
-
-                <div class="cart-emoji">${p.emoji}</div>
-
-                <div class="cart-info">
-
-                    <strong>${p.name}</strong>
-
-                    <small>${money(p.price)} each</small>
-
-                    <div class="qty">
-
-                        <button data-qty="${p.id}" data-change="-1">−</button>
-
-                        <span>${cart[p.id]}</span>
-
-                        <button data-qty="${p.id}" data-change="1">+</button>
-
-                    </div>
-
-                    <button class="remove" data-remove="${p.id}">
-                        Remove
-                    </button>
-
+function renderCart() {
+    document.getElementById("cart-items").innerHTML = cartItems.length ? cartItems.map(i => `
+        <div class="cart-item">
+            <div class="cart-emoji">📦</div>
+            <div class="cart-info">
+                <strong>${i.product_name}</strong>
+                <small>${money(i.price)} each</small>
+                <div class="qty">
+                    <button data-qty="${i.product_id}" data-change="-1">−</button>
+                    <span>${i.quantity}</span>
+                    <button data-qty="${i.product_id}" data-change="1">+</button>
                 </div>
-
-                <strong>${money(p.price * cart[p.id])}</strong>
-
+                <button class="remove" data-remove="${i.product_id}">Remove</button>
             </div>
+            <strong>${money(i.subtotal)}</strong>
+        </div>
+    `).join("") : `<div class="empty">Your cart is empty.</div>`;
 
-        `).join("") :
-
-        `<div class="empty">Your cart is empty.</div>`;
-
-
-    const subtotal = items.reduce(
-        (sum,p) => sum + p.price * cart[p.id], 0
-    );
-
+    const subtotal = cartItems.reduce((s, i) => s + Number(i.subtotal), 0);
     const delivery = subtotal === 0 || subtotal >= 999 ? 0 : 49;
-
     document.getElementById("totals").innerHTML = `
-
-        <div class="total-line">
-            <span>Subtotal</span>
-            <strong>${money(subtotal)}</strong>
-        </div>
-
-        <div class="total-line">
-            <span>Delivery</span>
-            <span>${subtotal === 0 ? "—" : delivery === 0 ? "Free" : money(delivery)}</span>
-        </div>
-
-        <div class="total-line final">
-            <span>Total</span>
-            <span>${money(subtotal + delivery)}</span>
-        </div>
-
-        <button class="primary checkout" id="checkout"
-            ${count === 0 ? "disabled" : ""}>
-            Proceed to checkout
-        </button>
-
-        <p class="note">Demo only — checkout and payments are not connected.</p>
-
+        <div class="total-line"><span>Subtotal</span><strong>${money(subtotal)}</strong></div>
+        <div class="total-line"><span>Delivery</span><span>${subtotal === 0 ? "—" : delivery === 0 ? "Free" : money(delivery)}</span></div>
+        <div class="total-line final"><span>Total</span><span>${money(subtotal + delivery)}</span></div>
+        <button class="primary checkout" id="checkout" ${cartItems.length === 0 ? "disabled" : ""}>Proceed to checkout</button>
+        <p class="note">You'll enter your shipping address at checkout.</p>
     `;
 
-
     document.querySelectorAll("[data-qty]").forEach(btn => {
-
         btn.addEventListener("click", () => {
-
             const id = Number(btn.dataset.qty);
-
-            cart[id] += Number(btn.dataset.change);
-
-            if(cart[id] <= 0) delete cart[id];
-
-            updateCart();
-
+            const item = cartItems.find(i => i.product_id === id);
+            changeQty(id, item.quantity + Number(btn.dataset.change));
         });
-
     });
-
-
     document.querySelectorAll("[data-remove]").forEach(btn => {
-
-        btn.addEventListener("click", () => {
-
-            delete cart[Number(btn.dataset.remove)];
-
-            updateCart();
-
-        });
-
+        btn.addEventListener("click", () => removeItem(Number(btn.dataset.remove)));
     });
-
-
     const checkout = document.getElementById("checkout");
-
-    if(checkout) {
-
-        checkout.addEventListener("click", () => {
-
-            showToast("Checkout is a demo feature — no payment was made.");
-
-        });
-
-    }
-
+    if (checkout) checkout.addEventListener("click", doCheckout);
 }
 
+async function changeQty(id, qty) {
+    if (qty <= 0) return removeItem(id);
+    try {
+        const res = await fetch(`/api/cart/items/${id}`, {
+            method: "PUT", headers: Session.headers(), body: JSON.stringify({ quantity: qty })
+        }).then(r => r.json());
+        if (!res.success) showToast(res.message || "Couldn't update quantity.");
+    } catch (err) {}
+    loadCart();
+}
 
+async function removeItem(id) {
+    try { await fetch(`/api/cart/items/${id}`, { method: "DELETE", headers: Session.headers() }); } catch (err) {}
+    loadCart();
+}
 
+async function doCheckout() {
+    const address = prompt("Enter your shipping address:");
+    if (!address) return;
+    try {
+        const res = await fetch("/api/orders", {
+            method: "POST", headers: Session.headers(), body: JSON.stringify({ shipping_address: address })
+        }).then(r => r.json());
+        if (res.success) { showToast("Order placed! Taking you to your orders…"); setTimeout(() => location.href = "orders.html", 1200); }
+        else showToast(res.message || "Checkout failed.");
+    } catch (err) { showToast("Checkout failed."); }
+}
+
+// ---- misc UI ----
 function showToast(message) {
-
     const toast = document.getElementById("toast");
-
     toast.textContent = message;
-
     toast.classList.add("show");
-
     clearTimeout(window.toastTimeout);
-
-    window.toastTimeout = setTimeout(() => {
-
-        toast.classList.remove("show");
-
-    },2300);
-
+    window.toastTimeout = setTimeout(() => toast.classList.remove("show"), 2300);
 }
 
-function openCart() {
+function openCart() { document.getElementById("overlay").classList.add("open"); loadCart(); }
+function closeCart() { document.getElementById("overlay").classList.remove("open"); }
 
-    document.getElementById("overlay").classList.add("open");
+document.getElementById("open-cart").addEventListener("click", openCart);
+document.getElementById("close-cart").addEventListener("click", closeCart);
+document.getElementById("overlay").addEventListener("click", e => { if (e.target.id === "overlay") closeCart(); });
+document.getElementById("search").addEventListener("input", e => { query = e.target.value.trim().toLowerCase(); renderProducts(); });
+document.getElementById("search-btn").addEventListener("click", () => { query = document.getElementById("search").value.trim().toLowerCase(); renderProducts(); });
+document.getElementById("sort").addEventListener("change", renderProducts);
+document.getElementById("shop-now").addEventListener("click", () => document.getElementById("shop").scrollIntoView({ behavior: "smooth" }));
 
-}
-
-function closeCart() {
-
-    document.getElementById("overlay").classList.remove("open");
-
-}
-
-document.getElementById("open-cart").addEventListener("click",openCart);
-
-document.getElementById("close-cart").addEventListener("click",closeCart);
-
-document.getElementById("overlay").addEventListener("click",e => {
-
-    if(e.target.id === "overlay") closeCart();
-
-});
-
-
-document.getElementById("search").addEventListener("input",e => {
-
-    query = e.target.value.trim().toLowerCase();
-
-    renderProducts();
-
-});
-
-document.getElementById("search-btn").addEventListener("click",() => {
-
-    query = document.getElementById("search").value.trim().toLowerCase();
-
-    renderProducts();
-
-});
-
-document.getElementById("sort").addEventListener("change",renderProducts);
-
-document.getElementById("shop-now").addEventListener("click",() => {
-
-    document.getElementById("shop").scrollIntoView({
-        behavior:"smooth"
-    });
-
-});
-
-renderCategories();
-renderProducts();
-updateCart();
+// ---- init ----
+renderAuthArea();
+loadProducts();
+loadCart();
 
 </script>
 

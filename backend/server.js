@@ -1,6 +1,7 @@
 
 require("dotenv").config();
 
+const path = require("path");
 const express = require("express");
 const cors = require("cors");
 
@@ -26,6 +27,12 @@ app.use("/api/cart", cartRoutes);
 app.use("/api/orders", orderRoutes);
 app.use("/api/reviews", reviewRoutes);
 app.use("/api/admin", adminRoutes);
+
+// Serve the frontend (HTML/CSS/JS at the project root) so pages load
+// from http://localhost:3000 and their fetch('/api/...') calls are
+// same-origin. express.static's default dotfiles:"ignore" means .env
+// and .git are never served.
+app.use(express.static(path.join(__dirname, "..")));
 
 // Health check
 app.get("/api/health", (req, res) => {
