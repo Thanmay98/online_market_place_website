@@ -5,6 +5,7 @@
 const express = require("express");
 const pool = require("../db");
 const { logActivity } = require("../log");
+const { authenticate } = require("../middleware/auth");
 
 const router = express.Router();
 
@@ -72,6 +73,29 @@ router.post("/login", async (req, res) => {
   } catch (err) {
     console.error("POST /api/auth/login failed:", err.message);
     res.status(500).json({ success: false, message: "Login failed" });
+  }
+});
+
+// Update the logged-in user's own profile (name, mobile, optional password).
+router.put("/profile", authenticate, async (req, res) => {
+  const { name, mobile, password } = req.body || {};
+  if (!name || !name.trim()) {
+    return res.status(400).json({ success: false, message: "Name is required" });
+  }
+  try {
+    await pool.query(
+      "UPDATE users SET name = ?, mobile = ?, password = COALESCE(?, password) WHERE user_id = ?",
+      [name.trim(), mobile || null, password ? password : null, req.user.user_id]
+    );
+    const [rows] = await pool.query(
+      "SELECT user_id, name, email, mobile, role, status FROM users WHERE user_id = ?",
+      [req.user.user_id]
+    );
+    await logActivity(req.user.user_id, "PROFILE_UPDATED", `${req.user.email} updated their profile`, req);
+    res.status(200).json({ success: true, message: "Profile updated", user: rows[0] });
+  } catch (err) {
+    console.error("PUT /api/auth/profile failed:", err.message);
+    res.status(500).json({ success: false, message: "Failed to update profile" });
   }
 });
 

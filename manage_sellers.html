@@ -171,79 +171,67 @@ button {
 
 <script>
 
-let sellers = [
-    {id: 1, name: "Rahul Stores", email: "rahul@gmail.com", status: "Approved", blocked: false},
-    {id: 2, name: "Priya Fashion", email: "priya@gmail.com", status: "Pending", blocked: false},
-    {id: 3, name: "Tech World", email: "tech@gmail.com", status: "Approved", blocked: true},
-    {id: 4, name: "Home Essentials", email: "home@gmail.com", status: "Rejected", blocked: false}
-];
+function getUser() {
+    try { return JSON.parse(localStorage.getItem("marketlyUser") || "null"); }
+    catch (e) { return null; }
+}
+const user = getUser();
+if (!user || (user.role !== "admin" && user.role !== "superadmin")) { location.href = "login.html"; }
+
+let sellers = [];
+
+async function load() {
+    try {
+        const res = await fetch("/api/admin/sellers", { headers: { "x-user-id": user.user_id } }).then(r => r.json());
+        sellers = res.sellers || [];
+    } catch (e) {}
+    displaySellers();
+}
+
+const statusLabel = s => s === "active" ? "Approved" : s === "pending" ? "Pending" : "Blocked";
+const statusClass = s => s === "active" ? "approved" : s === "pending" ? "pending" : "rejected";
 
 function displaySellers() {
-
     const search = document.getElementById("search").value.toLowerCase();
-
     const filtered = sellers.filter(s =>
-        s.name.toLowerCase().includes(search) ||
-        s.email.toLowerCase().includes(search)
+        s.name.toLowerCase().includes(search) || s.email.toLowerCase().includes(search)
     );
-
     const list = document.getElementById("sellerList");
+    document.getElementById("empty").style.display = filtered.length ? "none" : "block";
 
-    list.innerHTML = "";
+    list.innerHTML = filtered.map(s => `
+        <tr>
+            <td>${s.user_id}</td>
+            <td>${s.name}</td>
+            <td>${s.email}</td>
+            <td class="status ${statusClass(s.status)}">${statusLabel(s.status)}</td>
+            <td>${s.status === "blocked" ? "Blocked" : "Active"}</td>
+            <td>
+                ${s.status === "pending"
+                    ? `<button class="approve-btn" data-approve="${s.user_id}">Approve</button>
+                       <button class="reject-btn" data-reject="${s.user_id}">Reject</button>`
+                    : ""}
+                ${s.status === "blocked"
+                    ? `<button class="unblock-btn" data-unblock="${s.user_id}">Unblock</button>`
+                    : `<button class="block-btn" data-block="${s.user_id}">Block</button>`}
+            </td>
+        </tr>
+    `).join("");
 
-    document.getElementById("empty").style.display =
-        filtered.length ? "none" : "block";
-
-    filtered.forEach(seller => {
-
-        const index = sellers.indexOf(seller);
-
-        list.innerHTML += `
-            <tr>
-                <td>${seller.id}</td>
-                <td>${seller.name}</td>
-                <td>${seller.email}</td>
-
-                <td class="status ${seller.status.toLowerCase()}">
-                    ${seller.status}
-                </td>
-
-                <td>${seller.blocked ? "Blocked" : "Active"}</td>
-
-                <td>
-                    ${seller.status === "Pending" ? `
-                        <button class="approve-btn" onclick="approveSeller(${index})">Approve</button>
-                        <button class="reject-btn" onclick="rejectSeller(${index})">Reject</button>
-                    ` : ""}
-
-                    <button class="${seller.blocked ? "unblock-btn" : "block-btn"}"
-                        onclick="toggleBlock(${index})">
-                        ${seller.blocked ? "Unblock" : "Block"}
-                    </button>
-                </td>
-            </tr>
-        `;
-    });
+    document.querySelectorAll("[data-approve]").forEach(b => b.addEventListener("click", () => act(`/api/admin/sellers/${b.dataset.approve}/approve`)));
+    document.querySelectorAll("[data-reject]").forEach(b => b.addEventListener("click", () => act(`/api/admin/sellers/${b.dataset.reject}/reject`)));
+    document.querySelectorAll("[data-block]").forEach(b => b.addEventListener("click", () => act(`/api/admin/users/${b.dataset.block}/block`)));
+    document.querySelectorAll("[data-unblock]").forEach(b => b.addEventListener("click", () => act(`/api/admin/users/${b.dataset.unblock}/unblock`)));
 }
 
-function approveSeller(index) {
-    sellers[index].status = "Approved";
-    displaySellers();
-}
-
-function rejectSeller(index) {
-    sellers[index].status = "Rejected";
-    displaySellers();
-}
-
-function toggleBlock(index) {
-    sellers[index].blocked = !sellers[index].blocked;
-    displaySellers();
+async function act(url) {
+    const res = await fetch(url, { method: "PUT", headers: { "x-user-id": user.user_id } }).then(r => r.json());
+    if (!res.success) alert(res.message || "Action failed");
+    load();
 }
 
 document.getElementById("search").addEventListener("input", displaySellers);
-
-displaySellers();
+load();
 
 </script>
 

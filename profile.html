@@ -164,31 +164,58 @@
 
 <script>
 
-    document.getElementById("profileForm").addEventListener("submit", function(e) {
+    function getUser() {
+        try { return JSON.parse(localStorage.getItem("marketlyUser") || "null"); }
+        catch (e) { return null; }
+    }
+    let user = getUser();
+    if (!user) { location.href = "login.html"; }
 
+    // Prefill from the session. Email is the login id, so it's read-only.
+    document.getElementById("name").value = user.name || "";
+    const emailEl = document.getElementById("email");
+    emailEl.value = user.email || "";
+    emailEl.readOnly = true;
+
+    document.getElementById("profileForm").addEventListener("submit", async function (e) {
         e.preventDefault();
 
         const name = document.getElementById("name").value.trim();
-        const email = document.getElementById("email").value.trim();
         const mobile = document.getElementById("mobile").value.trim();
-
         const message = document.getElementById("message");
 
-        if (!name || !email || !mobile) {
+        if (!name) {
             message.style.color = "red";
-            message.textContent = "Please fill in all required fields.";
+            message.textContent = "Please enter your name.";
             return;
         }
-
-        if (!/^[0-9]{10}$/.test(mobile)) {
+        if (mobile && !/^[0-9]{10}$/.test(mobile)) {
             message.style.color = "red";
             message.textContent = "Enter a valid 10-digit mobile number.";
             return;
         }
 
-        message.style.color = "green";
-        message.textContent = "Profile updated successfully!";
+        try {
+            const res = await fetch("/api/auth/profile", {
+                method: "PUT",
+                headers: { "Content-Type": "application/json", "x-user-id": user.user_id },
+                body: JSON.stringify({ name, mobile })
+            }).then(r => r.json());
 
+            if (!res.success) {
+                message.style.color = "red";
+                message.textContent = res.message || "Update failed.";
+                return;
+            }
+            // Keep the session's name in sync.
+            user = { ...user, name: res.user.name };
+            localStorage.setItem("marketlyUser", JSON.stringify(user));
+            message.style.color = "green";
+            message.textContent = "Profile updated successfully!";
+        } catch (err) {
+            message.style.color = "red";
+            message.textContent = "Could not reach the server.";
+        }
     });
 
 </script>

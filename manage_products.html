@@ -159,97 +159,82 @@ button {
 
 <script>
 
-let products = [
-    {id: 101, name: "Wireless Headphones", category: "Electronics", seller: "Rahul Stores", price: 1499, status: "Active"},
-    {id: 102, name: "Everyday Backpack", category: "Accessories", seller: "Priya Fashion", price: 899, status: "Active"},
-    {id: 103, name: "Smart Watch", category: "Electronics", seller: "Tech World", price: 2199, status: "Inactive"},
-    {id: 104, name: "Classic Sneakers", category: "Fashion", seller: "Urban Store", price: 1299, status: "Active"}
-];
+function getUser() {
+    try { return JSON.parse(localStorage.getItem("marketlyUser") || "null"); }
+    catch (e) { return null; }
+}
+const user = getUser();
+if (!user || (user.role !== "admin" && user.role !== "superadmin")) { location.href = "login.html"; }
+
+let products = [];
+
+async function load() {
+    try {
+        const res = await fetch("/api/products").then(r => r.json());
+        products = res.products || [];
+    } catch (e) {}
+    displayProducts();
+}
 
 function displayProducts() {
-
     const search = document.getElementById("search").value.toLowerCase();
-
     const filtered = products.filter(p =>
-        p.name.toLowerCase().includes(search) ||
-        p.category.toLowerCase().includes(search)
+        p.product_name.toLowerCase().includes(search) || (p.category_name || "").toLowerCase().includes(search)
     );
-
     const list = document.getElementById("productList");
+    document.getElementById("empty").style.display = filtered.length ? "none" : "block";
 
-    list.innerHTML = "";
+    list.innerHTML = filtered.map(p => `
+        <tr>
+            <td>${p.product_id}</td>
+            <td>${p.product_name}</td>
+            <td>${p.category_name}</td>
+            <td>#${p.seller_id}</td>
+            <td>₹${Number(p.price).toLocaleString("en-IN")}</td>
+            <td class="${p.status}">${p.status}</td>
+            <td>
+                <button class="edit" data-edit="${p.product_id}" data-price="${p.price}" data-status="${p.status}">Edit</button>
+                <button class="delete" data-del="${p.product_id}">Delete</button>
+            </td>
+        </tr>
+    `).join("");
 
-    document.getElementById("empty").style.display =
-        filtered.length ? "none" : "block";
-
-    filtered.forEach(product => {
-
-        const index = products.indexOf(product);
-
-        list.innerHTML += `
-            <tr>
-                <td>${product.id}</td>
-                <td>${product.name}</td>
-                <td>${product.category}</td>
-                <td>${product.seller}</td>
-                <td>₹${product.price}</td>
-
-                <td class="${product.status.toLowerCase()}">
-                    ${product.status}
-                </td>
-
-                <td>
-                    <button class="edit" onclick="editProduct(${index})">
-                        Edit
-                    </button>
-
-                    <button class="delete" onclick="deleteProduct(${index})">
-                        Delete
-                    </button>
-                </td>
-            </tr>
-        `;
-    });
+    document.querySelectorAll("[data-edit]").forEach(b =>
+        b.addEventListener("click", () => editProduct(Number(b.dataset.edit), b.dataset.price, b.dataset.status)));
+    document.querySelectorAll("[data-del]").forEach(b =>
+        b.addEventListener("click", () => deleteProduct(Number(b.dataset.del))));
 }
 
-function editProduct(index) {
-
-    const newPrice = prompt("Enter new product price:", products[index].price);
-
+async function editProduct(id, curPrice, curStatus) {
+    const newPrice = prompt("Enter new product price:", curPrice);
     if (newPrice === null) return;
-
     const price = Number(newPrice);
+    if (!Number.isFinite(price) || price < 0) { alert("Enter a valid price."); return; }
 
-    if (!Number.isFinite(price) || price <= 0) {
-        alert("Enter a valid price.");
-        return;
-    }
+    const toggle = confirm(`Price will be updated.\n\nClick OK to also TOGGLE status (currently ${curStatus}), or Cancel to keep it.`);
+    const body = { price };
+    if (toggle) body.status = curStatus === "active" ? "inactive" : "active";
 
-    products[index].price = price;
-
-    products[index].status =
-        products[index].status === "Active" ? "Inactive" : "Active";
-
-    displayProducts();
-
-    alert("Product updated successfully!");
+    const res = await fetch(`/api/products/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json", "x-user-id": user.user_id },
+        body: JSON.stringify(body)
+    }).then(r => r.json());
+    alert(res.message || (res.success ? "Product updated" : "Update failed"));
+    load();
 }
 
-function deleteProduct(index) {
-
-    if (confirm("Are you sure you want to delete this product?")) {
-
-        products.splice(index, 1);
-
-        displayProducts();
-
-        alert("Product deleted successfully!");
-    }
+async function deleteProduct(id) {
+    if (!confirm("Are you sure you want to delete this product?")) return;
+    const res = await fetch(`/api/products/${id}`, {
+        method: "DELETE", headers: { "x-user-id": user.user_id }
+    }).then(r => r.json());
+    alert(res.message || (res.success ? "Product deleted" : "Delete failed"));
+    load();
 }
 
 document.getElementById("search").addEventListener("input", displayProducts);
-
-displayProducts();
+load();
 
 </script>
 

@@ -163,68 +163,62 @@ th {
 
 <script>
 
-let customers = [
-    {id: 1, name: "Rahul Sharma", email: "rahul@gmail.com", mobile: "9876543210", status: "Active"},
-    {id: 2, name: "Priya Kumar", email: "priya@gmail.com", mobile: "9876543211", status: "Active"},
-    {id: 3, name: "Arjun Reddy", email: "arjun@gmail.com", mobile: "9876543212", status: "Blocked"},
-    {id: 4, name: "Sneha Patel", email: "sneha@gmail.com", mobile: "9876543213", status: "Active"}
-];
+function getUser() {
+    try { return JSON.parse(localStorage.getItem("marketlyUser") || "null"); }
+    catch (e) { return null; }
+}
+const user = getUser();
+if (!user || (user.role !== "admin" && user.role !== "superadmin")) { location.href = "login.html"; }
 
-function displayCustomers() {
+let customers = [];
 
-    const search = document.getElementById("search").value.toLowerCase();
-
-    const filtered = customers.filter(c =>
-        c.name.toLowerCase().includes(search) ||
-        c.email.toLowerCase().includes(search)
-    );
-
-    const list = document.getElementById("customerList");
-    const empty = document.getElementById("empty");
-
-    list.innerHTML = "";
-
-    empty.style.display = filtered.length ? "none" : "block";
-
-    filtered.forEach(customer => {
-
-        const index = customers.indexOf(customer);
-
-        list.innerHTML += `
-            <tr>
-                <td>${customer.id}</td>
-                <td>${customer.name}</td>
-                <td>${customer.email}</td>
-                <td>${customer.mobile}</td>
-
-                <td class="status ${customer.status === "Active" ? "active" : "blocked"}">
-                    ${customer.status}
-                </td>
-
-                <td>
-                    <button
-                        class="action ${customer.status === "Blocked" ? "unblock" : ""}"
-                        onclick="toggleStatus(${index})">
-                        ${customer.status === "Active" ? "Block" : "Unblock"}
-                    </button>
-                </td>
-            </tr>
-        `;
-    });
+async function load() {
+    try {
+        const res = await fetch("/api/admin/customers", { headers: { "x-user-id": user.user_id } }).then(r => r.json());
+        customers = res.customers || [];
+    } catch (e) {}
+    displayCustomers();
 }
 
-function toggleStatus(index) {
+function displayCustomers() {
+    const search = document.getElementById("search").value.toLowerCase();
+    const filtered = customers.filter(c =>
+        c.name.toLowerCase().includes(search) || c.email.toLowerCase().includes(search)
+    );
+    const list = document.getElementById("customerList");
+    document.getElementById("empty").style.display = filtered.length ? "none" : "block";
 
-    customers[index].status =
-        customers[index].status === "Active" ? "Blocked" : "Active";
+    list.innerHTML = filtered.map(c => `
+        <tr>
+            <td>${c.user_id}</td>
+            <td>${c.name}</td>
+            <td>${c.email}</td>
+            <td>${c.mobile || "—"}</td>
+            <td class="status ${c.status === "active" ? "active" : "blocked"}">${c.status}</td>
+            <td>
+                <button class="action ${c.status === "blocked" ? "unblock" : ""}"
+                        data-id="${c.user_id}" data-status="${c.status}">
+                    ${c.status === "active" ? "Block" : "Unblock"}
+                </button>
+            </td>
+        </tr>
+    `).join("");
 
-    displayCustomers();
+    document.querySelectorAll("[data-id]").forEach(b =>
+        b.addEventListener("click", () => toggleStatus(Number(b.dataset.id), b.dataset.status)));
+}
 
+async function toggleStatus(id, status) {
+    const action = status === "active" ? "block" : "unblock";
+    const res = await fetch(`/api/admin/users/${id}/${action}`, {
+        method: "PUT", headers: { "x-user-id": user.user_id }
+    }).then(r => r.json());
+    if (!res.success) alert(res.message || "Action failed");
+    load();
 }
 
 document.getElementById("search").addEventListener("input", displayCustomers);
-
-displayCustomers();
+load();
 
 </script>
 

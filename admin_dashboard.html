@@ -138,7 +138,7 @@ main {
 
 <header>
     <div class="logo">marketly.</div>
-    <a href="login.html">Logout</a>
+    <a href="#" id="logout">Logout</a>
 </header>
 
 <main>
@@ -152,22 +152,22 @@ main {
 
         <div class="card">
             <p>Total Customers</p>
-            <h2>1,250</h2>
+            <h2 id="statCustomers">—</h2>
         </div>
 
         <div class="card">
             <p>Total Sellers</p>
-            <h2>85</h2>
+            <h2 id="statSellers">—</h2>
         </div>
 
         <div class="card">
             <p>Total Products</p>
-            <h2>430</h2>
+            <h2 id="statProducts">—</h2>
         </div>
 
         <div class="card">
             <p>Total Orders</p>
-            <h2>2,840</h2>
+            <h2 id="statOrders">—</h2>
         </div>
 
     </div>
@@ -190,39 +190,47 @@ main {
 
         <h2>Recent Marketplace Activity</h2>
 
-        <div class="activity">
-            <span>New customer registered</span>
-            <span class="status">Completed</span>
-        </div>
-
-        <div class="activity">
-            <span>New seller registration received</span>
-            <span class="status">Pending review</span>
-        </div>
-
-        <div class="activity">
-            <span>New product added</span>
-            <span class="status">Completed</span>
-        </div>
-
-        <div class="activity">
-            <span>Order #1005 placed</span>
-            <span class="status">Processing</span>
-        </div>
+        <div id="recentActivity"></div>
 
     </div>
 
 </main>
 
 <script>
-const adminStats = {
-    customers: 1250,
-    sellers: 85,
-    products: 430,
-    orders: 2840
-};
+function getUser() {
+    try { return JSON.parse(localStorage.getItem("marketlyUser") || "null"); }
+    catch (e) { return null; }
+}
+const user = getUser();
+if (!user || (user.role !== "admin" && user.role !== "superadmin")) { location.href = "login.html"; }
 
-console.log("Admin Dashboard Statistics:", adminStats);
+document.getElementById("logout").addEventListener("click", e => {
+    e.preventDefault(); localStorage.removeItem("marketlyUser"); location.href = "index.html";
+});
+
+async function loadAdmin() {
+    try {
+        const rep = await fetch("/api/admin/reports", { headers: { "x-user-id": user.user_id } }).then(r => r.json());
+        const r = rep.report || {};
+        document.getElementById("statCustomers").textContent = r.total_customers ?? "—";
+        document.getElementById("statSellers").textContent = r.total_sellers ?? "—";
+        document.getElementById("statProducts").textContent = r.total_products ?? "—";
+        document.getElementById("statOrders").textContent = r.total_orders ?? "—";
+    } catch (e) {}
+
+    try {
+        const logs = await fetch("/api/admin/logs?limit=6", { headers: { "x-user-id": user.user_id } }).then(r => r.json());
+        const items = logs.logs || [];
+        document.getElementById("recentActivity").innerHTML = items.length
+            ? items.map(l => `
+                <div class="activity">
+                    <span>${l.action}${l.description ? " — " + l.description : ""}</span>
+                    <span class="status">${new Date(l.created_at).toLocaleString("en-IN")}</span>
+                </div>`).join("")
+            : `<div class="activity"><span>No activity yet.</span><span class="status">—</span></div>`;
+    } catch (e) {}
+}
+loadAdmin();
 </script>
 
 </body>

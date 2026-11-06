@@ -37,37 +37,32 @@
         <div class="cards">
             <div class="card">
                 <p>Total Revenue</p>
-                <h2>₹1,25,000</h2>
+                <h2 id="repRevenue">₹0</h2>
             </div>
             <div class="card">
                 <p>Total Orders</p>
-                <h2>850</h2>
+                <h2 id="repOrders">0</h2>
             </div>
             <div class="card">
                 <p>Total Customers</p>
-                <h2>620</h2>
+                <h2 id="repCustomers">0</h2>
             </div>
             <div class="card">
                 <p>Active Sellers</p>
-                <h2>48</h2>
+                <h2 id="repSellers">0</h2>
             </div>
         </div>
 
         <div class="section">
-            <h2>Monthly Sales Report</h2>
+            <h2>Orders by Status</h2>
             <table>
                 <thead>
                     <tr>
-                        <th>Month</th>
-                        <th>Orders</th>
-                        <th>Revenue</th>
+                        <th>Status</th>
+                        <th>Count</th>
                     </tr>
                 </thead>
-                <tbody id="reportTable">
-                    <tr><td>August</td><td>210</td><td>₹28,000</td></tr>
-                    <tr><td>September</td><td>275</td><td>₹39,000</td></tr>
-                    <tr><td>October</td><td>365</td><td>₹58,000</td></tr>
-                </tbody>
+                <tbody id="reportTable"></tbody>
             </table>
             <br>
             <button onclick="downloadReport()">Download Report</button>
@@ -75,25 +70,47 @@
     </main>
 
     <script>
-        function downloadReport() {
-            const rows = [
-                ["Month", "Orders", "Revenue"],
-                ["August", "210", "28000"],
-                ["September", "275", "39000"],
-                ["October", "365", "58000"]
-            ];
+        function getUser() {
+            try { return JSON.parse(localStorage.getItem("marketlyUser") || "null"); }
+            catch (e) { return null; }
+        }
+        const user = getUser();
+        if (!user || (user.role !== "admin" && user.role !== "superadmin")) { location.href = "login.html"; }
 
+        const money = n => "₹" + Number(n || 0).toLocaleString("en-IN");
+
+        async function loadReports() {
+            try {
+                const rep = await fetch("/api/admin/reports", { headers: { "x-user-id": user.user_id } }).then(r => r.json());
+                const r = rep.report || {};
+                document.getElementById("repRevenue").textContent = money(r.total_revenue);
+                document.getElementById("repOrders").textContent = r.total_orders ?? 0;
+                document.getElementById("repCustomers").textContent = r.total_customers ?? 0;
+                document.getElementById("repSellers").textContent = r.total_sellers ?? 0;
+                const rows = r.orders_by_status || [];
+                document.getElementById("reportTable").innerHTML = rows.length
+                    ? rows.map(s => `<tr><td>${s.order_status}</td><td>${s.count}</td></tr>`).join("")
+                    : `<tr><td colspan="2" style="text-align:center;color:#64748b">No orders yet.</td></tr>`;
+            } catch (e) {}
+        }
+
+        function downloadReport() {
+            const rows = [["Status", "Count"]];
+            document.querySelectorAll("#reportTable tr").forEach(tr => {
+                const tds = tr.querySelectorAll("td");
+                if (tds.length >= 2) rows.push([tds[0].textContent, tds[1].textContent]);
+            });
             const csv = rows.map(row => row.join(",")).join("\n");
             const blob = new Blob([csv], { type: "text/csv" });
             const url = URL.createObjectURL(blob);
-
             const link = document.createElement("a");
             link.href = url;
             link.download = "marketly-admin-report.csv";
             link.click();
-
             URL.revokeObjectURL(url);
         }
+
+        loadReports();
     </script>
 </body>
 </html>

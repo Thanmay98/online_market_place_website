@@ -198,129 +198,102 @@ th {
 
 <script>
 
-let categories = [
-    {id: 1, name: "Electronics", description: "Electronic devices and gadgets"},
-    {id: 2, name: "Fashion", description: "Clothing and fashion accessories"},
-    {id: 3, name: "Home", description: "Home decor and essentials"},
-    {id: 4, name: "Accessories", description: "Everyday accessories"}
-];
+function getUser() {
+    try { return JSON.parse(localStorage.getItem("marketlyUser") || "null"); }
+    catch (e) { return null; }
+}
+const user = getUser();
+if (!user || (user.role !== "admin" && user.role !== "superadmin")) { location.href = "login.html"; }
 
-let editIndex = -1;
+let categories = [];
+let editId = null;
+
+async function load() {
+    try {
+        const res = await fetch("/api/categories", { headers: { "x-user-id": user.user_id } }).then(r => r.json());
+        categories = res.categories || [];
+    } catch (e) {}
+    displayCategories();
+}
 
 function displayCategories() {
-
-    const list = document.getElementById("categoryList");
-
-    list.innerHTML = categories.map((category, index) => `
+    document.getElementById("categoryList").innerHTML = categories.map(c => `
         <tr>
-            <td>${category.id}</td>
-            <td>${category.name}</td>
-            <td>${category.description}</td>
+            <td>${c.category_id}</td>
+            <td>${c.category_name}</td>
+            <td>${c.description || ""}</td>
             <td>
-                <button class="edit-btn"
-                    onclick="editCategory(${index})">Edit</button>
-
-                <button class="delete-btn"
-                    onclick="deleteCategory(${index})">Delete</button>
+                <button class="edit-btn" data-edit="${c.category_id}">Edit</button>
+                <button class="delete-btn" data-del="${c.category_id}">Delete</button>
             </td>
         </tr>
     `).join("");
-
+    document.querySelectorAll("[data-edit]").forEach(b => b.addEventListener("click", () => editCategory(Number(b.dataset.edit))));
+    document.querySelectorAll("[data-del]").forEach(b => b.addEventListener("click", () => deleteCategory(Number(b.dataset.del))));
 }
 
-document.getElementById("categoryForm").addEventListener("submit", function(e) {
-
+document.getElementById("categoryForm").addEventListener("submit", async function (e) {
     e.preventDefault();
-
     const name = document.getElementById("categoryName").value.trim();
     const description = document.getElementById("description").value.trim();
     const message = document.getElementById("message");
 
-    if (!name) {
-        message.style.color = "red";
-        message.textContent = "Enter a category name.";
-        return;
-    }
+    if (!name) { message.style.color = "red"; message.textContent = "Enter a category name."; return; }
 
-    const duplicate = categories.some((category, index) =>
-        category.name.toLowerCase() === name.toLowerCase() &&
-        index !== editIndex
-    );
+    let res;
+    try {
+        if (editId === null) {
+            res = await fetch("/api/categories", {
+                method: "POST",
+                headers: { "Content-Type": "application/json", "x-user-id": user.user_id },
+                body: JSON.stringify({ category_name: name, description })
+            }).then(r => r.json());
+        } else {
+            res = await fetch(`/api/categories/${editId}`, {
+                method: "PUT",
+                headers: { "Content-Type": "application/json", "x-user-id": user.user_id },
+                body: JSON.stringify({ category_name: name, description })
+            }).then(r => r.json());
+        }
+    } catch (err) { message.style.color = "red"; message.textContent = "Server error."; return; }
 
-    if (duplicate) {
-        message.style.color = "red";
-        message.textContent = "Category already exists.";
-        return;
-    }
-
-    if (editIndex === -1) {
-
-        const newId = categories.length
-            ? Math.max(...categories.map(c => c.id)) + 1
-            : 1;
-
-        categories.push({
-            id: newId,
-            name,
-            description
-        });
-
-        message.textContent = "Category added successfully!";
-
-    } else {
-
-        categories[editIndex].name = name;
-        categories[editIndex].description = description;
-
-        message.textContent = "Category updated successfully!";
-    }
-
+    if (!res.success) { message.style.color = "red"; message.textContent = res.message || "Failed."; return; }
     message.style.color = "green";
-
+    message.textContent = editId === null ? "Category added successfully!" : "Category updated successfully!";
     resetForm();
-    displayCategories();
-
+    load();
 });
 
-function editCategory(index) {
-
-    editIndex = index;
-
-    document.getElementById("categoryName").value = categories[index].name;
-    document.getElementById("description").value = categories[index].description;
-
+function editCategory(id) {
+    const c = categories.find(x => x.category_id === id);
+    if (!c) return;
+    editId = id;
+    document.getElementById("categoryName").value = c.category_name;
+    document.getElementById("description").value = c.description || "";
     document.getElementById("formTitle").textContent = "Edit Category";
     document.getElementById("submitBtn").textContent = "Update Category";
     document.getElementById("cancelBtn").style.display = "inline-block";
-
     document.getElementById("message").textContent = "";
-
 }
 
-function deleteCategory(index) {
-
-    if (confirm("Are you sure you want to delete this category?")) {
-
-        categories.splice(index, 1);
-
-        displayCategories();
-
-    }
-
+async function deleteCategory(id) {
+    if (!confirm("Are you sure you want to delete this category?")) return;
+    const res = await fetch(`/api/categories/${id}`, {
+        method: "DELETE", headers: { "x-user-id": user.user_id }
+    }).then(r => r.json());
+    if (!res.success) alert(res.message || "Delete failed");
+    load();
 }
 
 function resetForm() {
-
-    editIndex = -1;
-
+    editId = null;
     document.getElementById("categoryForm").reset();
     document.getElementById("formTitle").textContent = "Add New Category";
     document.getElementById("submitBtn").textContent = "Add Category";
     document.getElementById("cancelBtn").style.display = "none";
-
 }
 
-displayCategories();
+load();
 
 </script>
 
