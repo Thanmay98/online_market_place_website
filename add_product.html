@@ -160,53 +160,79 @@ button:hover {
 
 <script>
 
-document.getElementById("productForm").addEventListener("submit", function(e) {
+function getUser() {
+    try { return JSON.parse(localStorage.getItem("marketlyUser") || "null"); }
+    catch (e) { return null; }
+}
+const user = getUser();
+if (!user || user.role !== "seller") { location.href = "login.html"; }
 
+// Fill the category dropdown from the API (value = category_id).
+async function loadCategories() {
+    const sel = document.getElementById("category");
+    try {
+        const res = await fetch("/api/categories").then(r => r.json());
+        sel.innerHTML = `<option value="">Select category</option>` +
+            (res.categories || []).filter(c => c.status === "active")
+                .map(c => `<option value="${c.category_id}">${c.category_name}</option>`).join("");
+    } catch (e) {}
+}
+loadCategories();
+
+document.getElementById("productForm").addEventListener("submit", async function (e) {
     e.preventDefault();
 
     const name = document.getElementById("name").value.trim();
-    const category = document.getElementById("category").value;
+    const categoryId = Number(document.getElementById("category").value);
     const description = document.getElementById("description").value.trim();
     const price = Number(document.getElementById("price").value);
     const stock = Number(document.getElementById("stock").value);
-    const image = document.getElementById("image").files[0];
-
+    const imageFile = document.getElementById("image").files[0];
     const message = document.getElementById("message");
 
-    if (!name || !category || !description) {
+    if (!name || !categoryId || !description) {
         message.style.color = "red";
         message.textContent = "Please fill in all required fields.";
         return;
     }
-
     if (price <= 0 || !Number.isFinite(price)) {
         message.style.color = "red";
         message.textContent = "Enter a valid product price.";
         return;
     }
-
     if (!Number.isInteger(stock) || stock < 0) {
         message.style.color = "red";
         message.textContent = "Enter a valid stock quantity.";
         return;
     }
 
-    const product = {
-        name,
-        category,
-        description,
-        price,
-        stock,
-        image: image ? image.name : "No image uploaded"
-    };
+    try {
+        const res = await fetch("/api/products", {
+            method: "POST",
+            headers: { "Content-Type": "application/json", "x-user-id": user.user_id },
+            body: JSON.stringify({
+                category_id: categoryId,
+                product_name: name,
+                description,
+                price,
+                stock_quantity: stock,
+                image: imageFile ? imageFile.name : null
+            })
+        }).then(r => r.json());
 
-    console.log("New Product:", product);
-
-    message.style.color = "green";
-    message.textContent = "Product added successfully!";
-
-    document.getElementById("productForm").reset();
-
+        if (res.success) {
+            message.style.color = "green";
+            message.textContent = "Product added successfully!";
+            document.getElementById("productForm").reset();
+            loadCategories();
+        } else {
+            message.style.color = "red";
+            message.textContent = res.message || "Could not add product.";
+        }
+    } catch (err) {
+        message.style.color = "red";
+        message.textContent = "Could not reach the server.";
+    }
 });
 
 </script>

@@ -145,14 +145,14 @@ main {
     <nav>
         <a href="index.html">Home</a>
         &nbsp;&nbsp;
-        <a href="login.html">Logout</a>
+        <a href="#" id="logout">Logout</a>
     </nav>
 </header>
 
 <main>
 
     <div class="welcome">
-        <h1>Seller Dashboard 👋</h1>
+        <h1 id="welcome">Seller Dashboard 👋</h1>
         <p>Manage your products, track orders and monitor your sales.</p>
     </div>
 
@@ -187,37 +187,49 @@ main {
     <div class="section">
         <h2>Recent Orders</h2>
 
-        <div class="order">
-            <span>Order #1001 - Wireless Headphones</span>
-            <span class="status">Processing</span>
-        </div>
-
-        <div class="order">
-            <span>Order #1002 - Smart Watch</span>
-            <span class="status">Shipped</span>
-        </div>
-
-        <div class="order">
-            <span>Order #1003 - Backpack</span>
-            <span class="status">Delivered</span>
-        </div>
+        <div id="recentOrders"></div>
     </div>
 
 </main>
 
 <script>
-    // Sample seller dashboard data
+    function getUser() {
+        try { return JSON.parse(localStorage.getItem("marketlyUser") || "null"); }
+        catch (e) { return null; }
+    }
+    const user = getUser();
+    if (!user || user.role !== "seller") { location.href = "login.html"; }
 
-    const seller = {
-        products: 12,
-        orders: 28,
-        sales: 24500
-    };
+    document.getElementById("welcome").textContent = "Welcome, " + user.name + " 👋";
+    document.getElementById("logout").addEventListener("click", e => {
+        e.preventDefault(); localStorage.removeItem("marketlyUser"); location.href = "index.html";
+    });
 
-    document.getElementById("products").textContent = seller.products;
-    document.getElementById("orders").textContent = seller.orders;
-    document.getElementById("sales").textContent =
-        "₹" + seller.sales.toLocaleString("en-IN");
+    const money = n => "₹" + Number(n || 0).toLocaleString("en-IN");
+
+    async function loadDashboard() {
+        const [mine, so] = await Promise.all([
+            fetch("/api/products/mine", { headers: { "x-user-id": user.user_id } }).then(r => r.json()),
+            fetch("/api/orders/seller", { headers: { "x-user-id": user.user_id } }).then(r => r.json())
+        ]);
+        const products = mine.products || [];
+        const lines = so.items || [];
+
+        document.getElementById("products").textContent = products.length;
+        document.getElementById("orders").textContent = new Set(lines.map(l => l.order_id)).size;
+        document.getElementById("sales").textContent =
+            money(lines.filter(l => l.order_status !== "cancelled").reduce((s, l) => s + Number(l.subtotal), 0));
+
+        const recent = document.getElementById("recentOrders");
+        recent.innerHTML = lines.length
+            ? lines.slice(0, 5).map(l => `
+                <div class="order">
+                    <span>Order #${l.order_id} — ${l.product_name} ×${l.quantity}</span>
+                    <span class="status">${l.order_status}</span>
+                </div>`).join("")
+            : `<div class="order"><span>No orders yet.</span><span class="status">—</span></div>`;
+    }
+    loadDashboard();
 </script>
 
 </body>

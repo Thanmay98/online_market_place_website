@@ -121,7 +121,7 @@ select {
             <thead>
                 <tr>
                     <th>Order ID</th>
-                    <th>Customer</th>
+                    <th>Qty</th>
                     <th>Product</th>
                     <th>Amount</th>
                     <th>Order Status</th>
@@ -139,73 +139,54 @@ select {
 
 <script>
 
-let orders = [
-    {
-        id: 1001,
-        customer: "Rahul",
-        product: "Wireless Headphones",
-        amount: 1499,
-        status: "Processing"
-    },
-    {
-        id: 1002,
-        customer: "Priya",
-        product: "Everyday Backpack",
-        amount: 899,
-        status: "Shipped"
-    },
-    {
-        id: 1003,
-        customer: "Arjun",
-        product: "Smart Watch",
-        amount: 2199,
-        status: "Delivered"
-    }
-];
+function getUser() {
+    try { return JSON.parse(localStorage.getItem("marketlyUser") || "null"); }
+    catch (e) { return null; }
+}
+const user = getUser();
+if (!user || user.role !== "seller") { location.href = "login.html"; }
 
-function displayOrders() {
+const STATUSES = ["pending", "confirmed", "shipped", "delivered", "cancelled"];
 
+async function displayOrders() {
     const list = document.getElementById("ordersList");
+    let lines = [];
+    try {
+        const res = await fetch("/api/orders/seller", { headers: { "x-user-id": user.user_id } }).then(r => r.json());
+        lines = res.items || [];
+    } catch (e) {}
 
-    list.innerHTML = orders.map((order, index) => `
-
+    list.innerHTML = lines.length ? lines.map((l, i) => `
         <tr>
-            <td>#${order.id}</td>
-            <td>${order.customer}</td>
-            <td>${order.product}</td>
-            <td>₹${order.amount}</td>
-
-            <td class="status">${order.status}</td>
-
+            <td>#${l.order_id}</td>
+            <td>${l.quantity}</td>
+            <td>${l.product_name}</td>
+            <td>₹${Number(l.subtotal).toLocaleString("en-IN")}</td>
+            <td class="status">${l.order_status}</td>
             <td>
-                <select id="status${index}">
-                    <option ${order.status === "Processing" ? "selected" : ""}>Processing</option>
-                    <option ${order.status === "Shipped" ? "selected" : ""}>Shipped</option>
-                    <option ${order.status === "Delivered" ? "selected" : ""}>Delivered</option>
+                <select id="status${i}">
+                    ${STATUSES.map(s => `<option ${s === l.order_status ? "selected" : ""}>${s}</option>`).join("")}
                 </select>
             </td>
-
             <td>
-                <button class="update-btn" onclick="updateStatus(${index})">
-                    Update
-                </button>
+                <button class="update-btn" data-order="${l.order_id}" data-idx="${i}">Update</button>
             </td>
         </tr>
+    `).join("") : `<tr><td colspan="7" style="text-align:center;color:#687386">No orders for your products yet.</td></tr>`;
 
-    `).join("");
-
+    document.querySelectorAll("[data-order]").forEach(btn =>
+        btn.addEventListener("click", () => updateStatus(Number(btn.dataset.order), btn.dataset.idx)));
 }
 
-function updateStatus(index) {
-
-    const newStatus = document.getElementById("status" + index).value;
-
-    orders[index].status = newStatus;
-
+async function updateStatus(orderId, idx) {
+    const status = document.getElementById("status" + idx).value;
+    const res = await fetch(`/api/orders/${orderId}/status`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json", "x-user-id": user.user_id },
+        body: JSON.stringify({ order_status: status })
+    }).then(r => r.json());
+    alert(res.message || (res.success ? "Order status updated" : "Update failed"));
     displayOrders();
-
-    alert("Order status updated successfully!");
-
 }
 
 displayOrders();

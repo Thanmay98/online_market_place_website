@@ -158,17 +158,17 @@ th {
 
         <div class="card">
             <p>Total Revenue</p>
-            <h2>₹24,500</h2>
+            <h2 id="repRevenue">₹0</h2>
         </div>
 
         <div class="card">
             <p>Total Orders</p>
-            <h2>28</h2>
+            <h2 id="repOrders">0</h2>
         </div>
 
         <div class="card">
             <p>Products Sold</p>
-            <h2>45</h2>
+            <h2 id="repUnits">0</h2>
         </div>
 
     </div>
@@ -226,30 +226,47 @@ th {
                 </tr>
             </thead>
 
-            <tbody>
-                <tr>
-                    <td>Wireless Headphones</td>
-                    <td>18</td>
-                    <td>₹8,000</td>
-                </tr>
-
-                <tr>
-                    <td>Everyday Backpack</td>
-                    <td>15</td>
-                    <td>₹7,500</td>
-                </tr>
-
-                <tr>
-                    <td>Smart Watch</td>
-                    <td>12</td>
-                    <td>₹9,000</td>
-                </tr>
-            </tbody>
+            <tbody id="topProducts"></tbody>
         </table>
 
     </div>
 
 </main>
+
+<script>
+    function getUser() {
+        try { return JSON.parse(localStorage.getItem("marketlyUser") || "null"); }
+        catch (e) { return null; }
+    }
+    const user = getUser();
+    if (!user || user.role !== "seller") { location.href = "login.html"; }
+
+    const money = n => "₹" + Number(n || 0).toLocaleString("en-IN");
+
+    async function loadReport() {
+        let lines = [];
+        try {
+            const res = await fetch("/api/orders/seller", { headers: { "x-user-id": user.user_id } }).then(r => r.json());
+            lines = (res.items || []).filter(l => l.order_status !== "cancelled");
+        } catch (e) {}
+
+        document.getElementById("repRevenue").textContent = money(lines.reduce((s, l) => s + Number(l.subtotal), 0));
+        document.getElementById("repOrders").textContent = new Set(lines.map(l => l.order_id)).size;
+        document.getElementById("repUnits").textContent = lines.reduce((s, l) => s + l.quantity, 0);
+
+        const byProduct = {};
+        lines.forEach(l => {
+            if (!byProduct[l.product_name]) byProduct[l.product_name] = { units: 0, rev: 0 };
+            byProduct[l.product_name].units += l.quantity;
+            byProduct[l.product_name].rev += Number(l.subtotal);
+        });
+        const rows = Object.entries(byProduct).sort((a, b) => b[1].units - a[1].units);
+        document.getElementById("topProducts").innerHTML = rows.length
+            ? rows.map(([name, d]) => `<tr><td>${name}</td><td>${d.units}</td><td>${money(d.rev)}</td></tr>`).join("")
+            : `<tr><td colspan="3" style="text-align:center;color:#687386">No sales yet.</td></tr>`;
+    }
+    loadReport();
+</script>
 
 </body>
 </html>
