@@ -1,0 +1,328 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Marketly - Manage Categories</title>
+
+<style>
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: Arial, sans-serif;
+}
+
+body {
+    background: #f7f8fc;
+    color: #172033;
+}
+
+header {
+    background: white;
+    padding: 18px 7%;
+    display: flex;
+    justify-content: space-between;
+    border-bottom: 1px solid #e8eaf1;
+}
+
+.logo {
+    color: #4f46e5;
+    font-size: 25px;
+    font-weight: bold;
+}
+
+header a {
+    color: #4f46e5;
+    text-decoration: none;
+    font-weight: bold;
+}
+
+main {
+    max-width: 1000px;
+    margin: 40px auto;
+    padding: 0 20px;
+}
+
+.subtitle {
+    color: #687386;
+    margin: 10px 0 25px;
+}
+
+.form-box, .table-box {
+    background: white;
+    padding: 25px;
+    border: 1px solid #e8eaf1;
+    border-radius: 12px;
+    margin-bottom: 25px;
+}
+
+label {
+    display: block;
+    margin: 12px 0 7px;
+    font-weight: bold;
+}
+
+input, textarea {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    outline: none;
+}
+
+textarea {
+    resize: vertical;
+    min-height: 70px;
+}
+
+button {
+    padding: 10px 15px;
+    border: none;
+    border-radius: 7px;
+    cursor: pointer;
+    margin-top: 12px;
+}
+
+.add-btn {
+    background: #4f46e5;
+    color: white;
+    width: 100%;
+}
+
+.edit-btn {
+    background: #eef2ff;
+    color: #4f46e5;
+}
+
+.delete-btn {
+    background: #fee2e2;
+    color: #dc2626;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+th, td {
+    padding: 14px;
+    text-align: left;
+    border-bottom: 1px solid #eee;
+}
+
+th {
+    background: #f9fafb;
+    color: #687386;
+}
+
+#message {
+    margin-top: 12px;
+    font-size: 14px;
+}
+
+@media(max-width: 600px) {
+    .table-box {
+        overflow-x: auto;
+    }
+
+    table {
+        min-width: 500px;
+    }
+}
+</style>
+</head>
+
+<body>
+
+<header>
+    <div class="logo">marketly.</div>
+    <a href="admin_dashboard.html">← Dashboard</a>
+</header>
+
+<main>
+
+    <h1>Manage Categories 📂</h1>
+    <p class="subtitle">Add, edit and delete product categories.</p>
+
+    <div class="form-box">
+
+        <h2 id="formTitle">Add New Category</h2>
+
+        <form id="categoryForm">
+
+            <label>Category Name</label>
+            <input type="text" id="categoryName"
+                   placeholder="Enter category name" required>
+
+            <label>Description</label>
+            <textarea id="description"
+                      placeholder="Enter category description"></textarea>
+
+            <button type="submit" class="add-btn" id="submitBtn">
+                Add Category
+            </button>
+
+            <button type="button" id="cancelBtn"
+                    onclick="resetForm()" style="display:none">
+                Cancel Edit
+            </button>
+
+            <p id="message"></p>
+
+        </form>
+
+    </div>
+
+    <div class="table-box">
+
+        <h2>Existing Categories</h2>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Category Name</th>
+                    <th>Description</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+
+            <tbody id="categoryList"></tbody>
+        </table>
+
+    </div>
+
+</main>
+
+<script>
+
+let categories = [
+    {id: 1, name: "Electronics", description: "Electronic devices and gadgets"},
+    {id: 2, name: "Fashion", description: "Clothing and fashion accessories"},
+    {id: 3, name: "Home", description: "Home decor and essentials"},
+    {id: 4, name: "Accessories", description: "Everyday accessories"}
+];
+
+let editIndex = -1;
+
+function displayCategories() {
+
+    const list = document.getElementById("categoryList");
+
+    list.innerHTML = categories.map((category, index) => `
+        <tr>
+            <td>${category.id}</td>
+            <td>${category.name}</td>
+            <td>${category.description}</td>
+            <td>
+                <button class="edit-btn"
+                    onclick="editCategory(${index})">Edit</button>
+
+                <button class="delete-btn"
+                    onclick="deleteCategory(${index})">Delete</button>
+            </td>
+        </tr>
+    `).join("");
+
+}
+
+document.getElementById("categoryForm").addEventListener("submit", function(e) {
+
+    e.preventDefault();
+
+    const name = document.getElementById("categoryName").value.trim();
+    const description = document.getElementById("description").value.trim();
+    const message = document.getElementById("message");
+
+    if (!name) {
+        message.style.color = "red";
+        message.textContent = "Enter a category name.";
+        return;
+    }
+
+    const duplicate = categories.some((category, index) =>
+        category.name.toLowerCase() === name.toLowerCase() &&
+        index !== editIndex
+    );
+
+    if (duplicate) {
+        message.style.color = "red";
+        message.textContent = "Category already exists.";
+        return;
+    }
+
+    if (editIndex === -1) {
+
+        const newId = categories.length
+            ? Math.max(...categories.map(c => c.id)) + 1
+            : 1;
+
+        categories.push({
+            id: newId,
+            name,
+            description
+        });
+
+        message.textContent = "Category added successfully!";
+
+    } else {
+
+        categories[editIndex].name = name;
+        categories[editIndex].description = description;
+
+        message.textContent = "Category updated successfully!";
+    }
+
+    message.style.color = "green";
+
+    resetForm();
+    displayCategories();
+
+});
+
+function editCategory(index) {
+
+    editIndex = index;
+
+    document.getElementById("categoryName").value = categories[index].name;
+    document.getElementById("description").value = categories[index].description;
+
+    document.getElementById("formTitle").textContent = "Edit Category";
+    document.getElementById("submitBtn").textContent = "Update Category";
+    document.getElementById("cancelBtn").style.display = "inline-block";
+
+    document.getElementById("message").textContent = "";
+
+}
+
+function deleteCategory(index) {
+
+    if (confirm("Are you sure you want to delete this category?")) {
+
+        categories.splice(index, 1);
+
+        displayCategories();
+
+    }
+
+}
+
+function resetForm() {
+
+    editIndex = -1;
+
+    document.getElementById("categoryForm").reset();
+    document.getElementById("formTitle").textContent = "Add New Category";
+    document.getElementById("submitBtn").textContent = "Add Category";
+    document.getElementById("cancelBtn").style.display = "none";
+
+}
+
+displayCategories();
+
+</script>
+
+</body>
+</html>

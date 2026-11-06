@@ -1,0 +1,232 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Marketly - Manage Customers</title>
+
+<style>
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: Arial, sans-serif;
+}
+
+body {
+    background: #f7f8fc;
+    color: #172033;
+}
+
+header {
+    background: white;
+    padding: 18px 7%;
+    display: flex;
+    justify-content: space-between;
+    border-bottom: 1px solid #e8eaf1;
+}
+
+.logo {
+    color: #4f46e5;
+    font-size: 25px;
+    font-weight: bold;
+}
+
+header a {
+    color: #4f46e5;
+    text-decoration: none;
+    font-weight: bold;
+}
+
+main {
+    max-width: 1100px;
+    margin: 40px auto;
+    padding: 0 20px;
+}
+
+.subtitle {
+    color: #687386;
+    margin: 10px 0 25px;
+}
+
+.search {
+    width: 100%;
+    padding: 13px;
+    border: 1px solid #ddd;
+    border-radius: 9px;
+    margin-bottom: 20px;
+}
+
+.container {
+    background: white;
+    padding: 20px;
+    border-radius: 12px;
+    border: 1px solid #e8eaf1;
+    overflow-x: auto;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 650px;
+}
+
+th, td {
+    padding: 15px;
+    text-align: left;
+    border-bottom: 1px solid #eee;
+}
+
+th {
+    background: #f9fafb;
+    color: #687386;
+}
+
+.status {
+    font-weight: bold;
+}
+
+.active {
+    color: #15803d;
+}
+
+.blocked {
+    color: #dc2626;
+}
+
+.action {
+    padding: 8px 12px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    background: #fee2e2;
+    color: #dc2626;
+}
+
+.unblock {
+    background: #dcfce7;
+    color: #15803d;
+}
+
+@media(max-width: 600px) {
+    header {
+        padding: 18px;
+    }
+}
+</style>
+</head>
+
+<body>
+
+<header>
+    <div class="logo">marketly.</div>
+    <a href="admin_dashboard.html">← Dashboard</a>
+</header>
+
+<main>
+
+    <h1>Manage Customers 👥</h1>
+    <p class="subtitle">View, search and manage registered customers.</p>
+
+    <input
+        type="text"
+        id="search"
+        class="search"
+        placeholder="Search customers by name or email..."
+    >
+
+    <div class="container">
+
+        <table>
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Name</th>
+                    <th>Email</th>
+                    <th>Mobile</th>
+                    <th>Status</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+
+            <tbody id="customerList"></tbody>
+        </table>
+
+        <p id="empty" style="display:none; text-align:center; padding:25px;">
+            No customers found.
+        </p>
+
+    </div>
+
+</main>
+
+<script>
+
+let customers = [
+    {id: 1, name: "Rahul Sharma", email: "rahul@gmail.com", mobile: "9876543210", status: "Active"},
+    {id: 2, name: "Priya Kumar", email: "priya@gmail.com", mobile: "9876543211", status: "Active"},
+    {id: 3, name: "Arjun Reddy", email: "arjun@gmail.com", mobile: "9876543212", status: "Blocked"},
+    {id: 4, name: "Sneha Patel", email: "sneha@gmail.com", mobile: "9876543213", status: "Active"}
+];
+
+function displayCustomers() {
+
+    const search = document.getElementById("search").value.toLowerCase();
+
+    const filtered = customers.filter(c =>
+        c.name.toLowerCase().includes(search) ||
+        c.email.toLowerCase().includes(search)
+    );
+
+    const list = document.getElementById("customerList");
+    const empty = document.getElementById("empty");
+
+    list.innerHTML = "";
+
+    empty.style.display = filtered.length ? "none" : "block";
+
+    filtered.forEach(customer => {
+
+        const index = customers.indexOf(customer);
+
+        list.innerHTML += `
+            <tr>
+                <td>${customer.id}</td>
+                <td>${customer.name}</td>
+                <td>${customer.email}</td>
+                <td>${customer.mobile}</td>
+
+                <td class="status ${customer.status === "Active" ? "active" : "blocked"}">
+                    ${customer.status}
+                </td>
+
+                <td>
+                    <button
+                        class="action ${customer.status === "Blocked" ? "unblock" : ""}"
+                        onclick="toggleStatus(${index})">
+                        ${customer.status === "Active" ? "Block" : "Unblock"}
+                    </button>
+                </td>
+            </tr>
+        `;
+    });
+}
+
+function toggleStatus(index) {
+
+    customers[index].status =
+        customers[index].status === "Active" ? "Blocked" : "Active";
+
+    displayCustomers();
+
+}
+
+document.getElementById("search").addEventListener("input", displayCustomers);
+
+displayCustomers();
+
+</script>
+
+</body>
+</html>

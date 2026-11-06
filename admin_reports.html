@@ -1,0 +1,99 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Reports | Marketly</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: Arial, sans-serif; }
+        body { background: #f4f6fb; color: #222; }
+        header { background: #172554; color: white; padding: 20px 5%; }
+        header a { color: white; text-decoration: none; }
+        main { max-width: 1100px; margin: 35px auto; padding: 20px; }
+        h1 { margin-bottom: 8px; }
+        .subtitle { color: #64748b; margin-bottom: 25px; }
+        .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 18px; }
+        .card { background: white; padding: 22px; border-radius: 12px; box-shadow: 0 3px 12px #0000000c; }
+        .card p { color: #64748b; margin-bottom: 12px; }
+        .card h2 { color: #1d4ed8; }
+        .section { background: white; padding: 22px; margin-top: 25px; border-radius: 12px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        th, td { padding: 13px; border-bottom: 1px solid #e2e8f0; text-align: left; }
+        th { background: #eff6ff; }
+        button { background: #1d4ed8; color: white; border: none; padding: 10px 16px; border-radius: 6px; cursor: pointer; }
+        @media(max-width: 600px) { main { margin: 15px auto; } .section { overflow-x: auto; } }
+    </style>
+</head>
+<body>
+    <header>
+        <a href="admin_dashboard.html">← Back to Admin Dashboard</a>
+    </header>
+
+    <main>
+        <h1>Marketplace Reports</h1>
+        <p class="subtitle">Overview of marketplace performance and activity.</p>
+
+        <div class="cards">
+            <div class="card">
+                <p>Total Revenue</p>
+                <h2>₹1,25,000</h2>
+            </div>
+            <div class="card">
+                <p>Total Orders</p>
+                <h2>850</h2>
+            </div>
+            <div class="card">
+                <p>Total Customers</p>
+                <h2>620</h2>
+            </div>
+            <div class="card">
+                <p>Active Sellers</p>
+                <h2>48</h2>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Monthly Sales Report</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Month</th>
+                        <th>Orders</th>
+                        <th>Revenue</th>
+                    </tr>
+                </thead>
+                <tbody id="reportTable">
+                    <tr><td>August</td><td>210</td><td>₹28,000</td></tr>
+                    <tr><td>September</td><td>275</td><td>₹39,000</td></tr>
+                    <tr><td>October</td><td>365</td><td>₹58,000</td></tr>
+                </tbody>
+            </table>
+            <br>
+            <button onclick="downloadReport()">Download Report</button>
+        </div>
+    </main>
+
+    <script>
+        function downloadReport() {
+            const rows = [
+                ["Month", "Orders", "Revenue"],
+                ["August", "210", "28000"],
+                ["September", "275", "39000"],
+                ["October", "365", "58000"]
+            ];
+
+            const csv = rows.map(row => row.join(",")).join("\n");
+            const blob = new Blob([csv], { type: "text/csv" });
+            const url = URL.createObjectURL(blob);
+
+            const link = document.createElement("a");
+            link.href = url;
+            link.download = "marketly-admin-report.csv";
+            link.click();
+
+            URL.revokeObjectURL(url);
+        }
+    </script>
+</body>
+</html>
