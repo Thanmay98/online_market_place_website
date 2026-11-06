@@ -4,12 +4,6 @@ const cors = require("cors");
 
 const pool = require("./db");
 
-const {
-    getWishlist,
-    addToWishlist,
-    removeFromWishlist
-} = require("./wishlist");
-
 const app = express();
 const PORT = 3000;
 
@@ -90,56 +84,6 @@ app.get("/api/products/:id", async (req, res) => {
             message: "Failed to fetch product"
         });
     }
-});
-
-// Get wishlist
-app.get("/api/wishlist", (req, res) => {
-    const wishlistProducts = getWishlist();
-
-    res.status(200).json({
-        success: true,
-        count: wishlistProducts.length,
-        products: wishlistProducts
-    });
-});
-
-// Add product to wishlist
-app.post("/api/wishlist", (req, res) => {
-    const productId = Number(req.body?.productId);
-
-    if (!Number.isInteger(productId) || productId <= 0) {
-        return res.status(400).json({
-            success: false,
-            message: "Valid productId is required"
-        });
-    }
-
-    const result = addToWishlist(productId);
-
-    if (result.error) {
-        return res.status(result.status).json({
-            success: false,
-            message: result.error
-        });
-    }
-
-    res.status(201).json(result);
-});
-
-// Remove product from wishlist
-app.delete("/api/wishlist/:id", (req, res) => {
-    const productId = Number(req.params.id);
-
-    const result = removeFromWishlist(productId);
-
-    if (result.error) {
-        return res.status(result.status).json({
-            success: false,
-            message: result.error
-        });
-    }
-
-    res.status(200).json(result);
 });
 
 // Handle unknown routes
