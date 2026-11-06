@@ -1,0 +1,128 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>System Logs | Marketly</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: Arial, sans-serif; }
+        body { background: #f1f5f9; color: #1e293b; }
+        header { background: #0f172a; color: white; padding: 20px 5%; }
+        header a { color: white; text-decoration: none; }
+        main { max-width: 1100px; margin: 35px auto; padding: 20px; }
+        h1 { margin-bottom: 8px; }
+        .subtitle { color: #64748b; margin-bottom: 22px; }
+        .panel { background: white; padding: 22px; border-radius: 12px; }
+        input, select { padding: 11px; border: 1px solid #cbd5e1; border-radius: 6px; margin: 5px; }
+        button { padding: 11px 16px; border: none; border-radius: 6px; background: #2563eb; color: white; cursor: pointer; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { padding: 14px; border-bottom: 1px solid #e2e8f0; text-align: left; }
+        th { background: #eff6ff; }
+        .success { color: #15803d; font-weight: bold; }
+        .warning { color: #d97706; font-weight: bold; }
+        .info { color: #2563eb; font-weight: bold; }
+        @media(max-width: 650px) {
+            .panel { overflow-x: auto; }
+            input, select { width: 100%; margin: 5px 0; }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <a href="superadmin_dashboard.html">← Back to Super Admin Dashboard</a>
+    </header>
+
+    <main>
+        <h1>System Activity Logs</h1>
+        <p class="subtitle">Monitor important activities performed on Marketly.</p>
+
+        <div class="panel">
+            <input type="text" id="searchInput" placeholder="Search activity..." oninput="filterLogs()">
+
+            <select id="typeFilter" onchange="filterLogs()">
+                <option value="all">All Activities</option>
+                <option value="User">User</option>
+                <option value="Product">Product</option>
+                <option value="Order">Order</option>
+                <option value="System">System</option>
+            </select>
+
+            <button onclick="resetFilters()">Reset Filters</button>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>Date & Time</th>
+                        <th>User</th>
+                        <th>Activity</th>
+                        <th>Type</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody id="logsTable">
+                    <tr>
+                        <td>05-11-2026 09:30 AM</td>
+                        <td>Arun</td>
+                        <td>Customer registered</td>
+                        <td>User</td>
+                        <td class="success">Success</td>
+                    </tr>
+                    <tr>
+                        <td>05-11-2026 10:15 AM</td>
+                        <td>Priya</td>
+                        <td>Product updated</td>
+                        <td>Product</td>
+                        <td class="success">Success</td>
+                    </tr>
+                    <tr>
+                        <td>05-11-2026 11:20 AM</td>
+                        <td>Rahul</td>
+                        <td>Order placed</td>
+                        <td>Order</td>
+                        <td class="success">Success</td>
+                    </tr>
+                    <tr>
+                        <td>05-11-2026 12:05 PM</td>
+                        <td>Unknown</td>
+                        <td>Failed login attempt</td>
+                        <td>System</td>
+                        <td class="warning">Failed</td>
+                    </tr>
+                    <tr>
+                        <td>05-11-2026 01:00 PM</td>
+                        <td>Admin</td>
+                        <td>Seller account approved</td>
+                        <td>User</td>
+                        <td class="info">Completed</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </main>
+
+    <script>
+        function filterLogs() {
+            const search = document.getElementById("searchInput").value.toLowerCase();
+            const type = document.getElementById("typeFilter").value;
+            const rows = document.querySelectorAll("#logsTable tr");
+
+            rows.forEach(row => {
+                const text = row.textContent.toLowerCase();
+                const rowType = row.cells[3].textContent;
+
+                const matchesSearch = text.includes(search);
+                const matchesType = type === "all" || rowType === type;
+
+                row.style.display = matchesSearch && matchesType ? "" : "none";
+            });
+        }
+
+        function resetFilters() {
+            document.getElementById("searchInput").value = "";
+            document.getElementById("typeFilter").value = "all";
+            filterLogs();
+        }
+    </script>
+</body>
+</html>

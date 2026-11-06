@@ -1,0 +1,127 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Permissions | Marketly</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: Arial, sans-serif; }
+        body { background: #f1f5f9; color: #1e293b; }
+        header { background: #0f172a; color: white; padding: 20px 5%; }
+        header a { color: white; text-decoration: none; }
+        main { max-width: 950px; margin: 35px auto; padding: 20px; }
+        h1 { margin-bottom: 8px; }
+        .subtitle { color: #64748b; margin-bottom: 22px; }
+        .panel { background: white; padding: 22px; border-radius: 12px; margin-bottom: 20px; }
+        select { padding: 11px; border: 1px solid #cbd5e1; border-radius: 6px; width: 100%; margin-top: 10px; }
+        .permission { display: flex; justify-content: space-between; align-items: center; padding: 15px 0; border-bottom: 1px solid #e2e8f0; gap: 15px; }
+        .permission:last-child { border-bottom: none; }
+        .permission p { color: #64748b; font-size: 13px; margin-top: 4px; }
+        input[type="checkbox"] { width: 19px; height: 19px; cursor: pointer; }
+        button { background: #2563eb; color: white; border: none; padding: 12px 20px; border-radius: 6px; cursor: pointer; margin-top: 18px; }
+        @media(max-width: 550px) { main { margin: 15px auto; } .permission { align-items: flex-start; } }
+    </style>
+</head>
+<body>
+    <header>
+        <a href="superadmin_dashboard.html">← Back to Super Admin Dashboard</a>
+    </header>
+
+    <main>
+        <h1>Admin Permissions</h1>
+        <p class="subtitle">Control which actions administrators can perform.</p>
+
+        <div class="panel">
+            <h3>Select Administrator</h3>
+            <select id="adminSelect">
+                <option value="arun">Arun Kumar</option>
+                <option value="priya">Priya Sharma</option>
+            </select>
+        </div>
+
+        <div class="panel">
+            <h3>Permission Settings</h3>
+
+            <div class="permission">
+                <div>
+                    <strong>Manage Customers</strong>
+                    <p>View and manage customer accounts.</p>
+                </div>
+                <input type="checkbox" id="customers" checked>
+            </div>
+
+            <div class="permission">
+                <div>
+                    <strong>Manage Sellers</strong>
+                    <p>Approve, block and manage sellers.</p>
+                </div>
+                <input type="checkbox" id="sellers" checked>
+            </div>
+
+            <div class="permission">
+                <div>
+                    <strong>Manage Products</strong>
+                    <p>Review, edit and remove products.</p>
+                </div>
+                <input type="checkbox" id="products" checked>
+            </div>
+
+            <div class="permission">
+                <div>
+                    <strong>Manage Categories</strong>
+                    <p>Add, edit and delete categories.</p>
+                </div>
+                <input type="checkbox" id="categories">
+            </div>
+
+            <div class="permission">
+                <div>
+                    <strong>View Reports</strong>
+                    <p>Access marketplace performance reports.</p>
+                </div>
+                <input type="checkbox" id="reports" checked>
+            </div>
+
+            <div class="permission">
+                <div>
+                    <strong>View System Logs</strong>
+                    <p>Access system activity records.</p>
+                </div>
+                <input type="checkbox" id="logs">
+            </div>
+
+            <button onclick="savePermissions()">Save Permissions</button>
+        </div>
+    </main>
+
+    <script>
+        const permissions = ["customers", "sellers", "products", "categories", "reports", "logs"];
+
+        function savePermissions() {
+            const admin = document.getElementById("adminSelect").value;
+            const settings = {};
+
+            permissions.forEach(permission => {
+                settings[permission] = document.getElementById(permission).checked;
+            });
+
+            localStorage.setItem("permissions_" + admin, JSON.stringify(settings));
+            alert("Permissions saved successfully!");
+        }
+
+        function loadPermissions() {
+            const admin = document.getElementById("adminSelect").value;
+            const saved = JSON.parse(localStorage.getItem("permissions_" + admin) || "null");
+
+            permissions.forEach(permission => {
+                document.getElementById(permission).checked =
+                    saved ? saved[permission] : ["customers", "sellers", "products", "reports"].includes(permission);
+            });
+        }
+
+        document.getElementById("adminSelect").addEventListener("change", loadPermissions);
+        loadPermissions();
+    </script>
+</body>
+</html>
