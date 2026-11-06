@@ -1,9 +1,12 @@
 
+require("dotenv").config();
+
 const express = require("express");
 const cors = require("cors");
 
 const pool = require("./db");
 const authRoutes = require("./routes/auth");
+const categoryRoutes = require("./routes/categories");
 
 const app = express();
 const PORT = 3000;
@@ -13,6 +16,7 @@ app.use(express.json());
 
 // Routes
 app.use("/api/auth", authRoutes);
+app.use("/api/categories", categoryRoutes);
 
 // Health check
 app.get("/api/health", (req, res) => {
