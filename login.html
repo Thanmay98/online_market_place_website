@@ -148,13 +148,14 @@
     </div>
 
     <script>
-        document.getElementById("loginForm").addEventListener("submit", function(e) {
+        document.getElementById("loginForm").addEventListener("submit", async function (e) {
 
             e.preventDefault();
 
             const email = document.getElementById("email").value.trim();
             const password = document.getElementById("password").value;
             const message = document.getElementById("message");
+            message.style.color = "red";
 
             if (email === "" || password === "") {
                 message.textContent = "Please fill in all fields.";
@@ -166,8 +167,30 @@
                 return;
             }
 
-            message.style.color = "green";
-            message.textContent = "Form validated! Backend login integration is next.";
+            try {
+                const res = await fetch("/api/auth/login", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ email, password })
+                }).then(r => r.json());
+
+                if (!res.success) {
+                    message.textContent = res.message || "Login failed.";
+                    return;
+                }
+
+                // Save the session, then send the user to their dashboard.
+                localStorage.setItem("marketlyUser", JSON.stringify(res.user));
+                message.style.color = "green";
+                message.textContent = "Welcome back, " + res.user.name + "!";
+
+                const dest = res.user.role === "seller" ? "seller_dashboard.html"
+                           : (res.user.role === "admin" || res.user.role === "superadmin") ? "admin_dashboard.html"
+                           : "customer_dashboard.html";
+                setTimeout(() => location.href = dest, 700);
+            } catch (err) {
+                message.textContent = "Could not reach the server.";
+            }
 
         });
     </script>

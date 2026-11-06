@@ -12,17 +12,21 @@
         header a { color: white; text-decoration: none; }
         main { max-width: 1000px; margin: 40px auto; padding: 20px; }
         .product { display: grid; grid-template-columns: 1fr 1fr; gap: 35px; background: white; padding: 25px; border-radius: 12px; }
-        .product img { width: 100%; height: 350px; object-fit: cover; border-radius: 10px; background: #e2e8f0; }
+        .product .art { width: 100%; height: 350px; display:flex; align-items:center; justify-content:center; font-size:140px; border-radius: 10px; background: #e2e8f0; }
         .details { padding: 15px 0; }
-        .category { color: #2563eb; margin-bottom: 12px; }
+        .category { color: #2563eb; margin-bottom: 12px; text-transform:uppercase; font-size:13px; font-weight:bold; }
         h1 { margin-bottom: 15px; }
         .price { color: #1d4ed8; font-size: 28px; font-weight: bold; margin: 18px 0; }
         .description { color: #64748b; line-height: 1.7; margin-bottom: 20px; }
         .stock { color: #15803d; margin-bottom: 20px; font-weight: bold; }
         button { background: #2563eb; color: white; border: none; padding: 13px 22px; border-radius: 7px; cursor: pointer; font-size: 15px; }
         button:hover { background: #1d4ed8; }
+        button:disabled { opacity:.5; cursor:not-allowed; }
         #message { margin-top: 15px; color: green; }
-        @media(max-width: 650px) { .product { grid-template-columns: 1fr; } .product img { height: 250px; } }
+        #reviews h2 { margin-bottom: 14px; }
+        .review { background:white; padding:14px; border-radius:10px; margin-bottom:10px; }
+        .review .stars { color:#b7791f; }
+        @media(max-width: 650px) { .product { grid-template-columns: 1fr; } .product .art { height: 250px; font-size:100px; } }
     </style>
 </head>
 <body>
@@ -32,104 +36,126 @@
 
     <main>
         <div class="product">
-            <img id="productImage" src="https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=700" alt="Product image">
+            <div class="art" id="productArt">📦</div>
 
             <div class="details">
-                <p class="category" id="category">Electronics</p>
-                <h1 id="productName">Wireless Headphones</h1>
-                <p class="price" id="productPrice">₹1,499</p>
+                <p class="category" id="category"></p>
+                <h1 id="productName">Loading…</h1>
+                <p class="price" id="productPrice"></p>
 
-                <p class="description" id="productDescription">
-                    Experience high-quality sound with these comfortable wireless headphones.
-                    Designed for everyday use with excellent audio performance.
-                </p>
+                <p class="description" id="productDescription"></p>
 
-                <p class="stock" id="stockStatus">In Stock</p>
+                <p class="stock" id="stockStatus"></p>
 
                 <button id="addToCart">Add to Cart</button>
                 <p id="message"></p>
             </div>
         </div>
+
+        <div id="reviews" style="margin-top:30px"></div>
     </main>
 
     <script>
-        const products = [
-            {
-                id: 1,
-                name: "Wireless Headphones",
-                category: "Electronics",
-                price: 1499,
-                description: "Experience high-quality sound with comfortable wireless headphones. Perfect for music, calls and everyday use.",
-                image: "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=700",
-                stock: 15
-            },
-            {
-                id: 2,
-                name: "Smart Watch",
-                category: "Electronics",
-                price: 2499,
-                description: "A stylish smartwatch with useful everyday features and activity tracking.",
-                image: "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=700",
-                stock: 10
-            },
-            {
-                id: 3,
-                name: "Casual Shoes",
-                category: "Fashion",
-                price: 1999,
-                description: "Comfortable casual shoes designed for daily wear.",
-                image: "https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=700",
-                stock: 0
+        const CAT_EMOJI = { Electronics:"🎧", Books:"📘", "Home & Kitchen":"🏠", Fashion:"👕", Accessories:"🎒" };
+        const params = new URLSearchParams(location.search);
+        const productId = Number(params.get("id"));
+        const msg = document.getElementById("message");
+        const money = n => "₹" + Number(n || 0).toLocaleString("en-IN");
+
+        function getUser() {
+            try { return JSON.parse(localStorage.getItem("marketlyUser") || "null"); }
+            catch (e) { return null; }
+        }
+
+        async function loadProduct() {
+            if (!productId) { document.querySelector("main").innerHTML = "<p style='padding:30px'>Product not found.</p>"; return; }
+
+            let product;
+            try {
+                const res = await fetch("/api/products/" + productId).then(r => r.json());
+                if (!res.success) { document.querySelector("main").innerHTML = "<p style='padding:30px'>Product not found.</p>"; return; }
+                product = res.product;
+            } catch (e) {
+                document.querySelector("main").innerHTML = "<p style='padding:30px'>Could not load product.</p>";
+                return;
             }
-        ];
 
-        const params = new URLSearchParams(window.location.search);
-        const productId = Number(params.get("id")) || 1;
-        const product = products.find(item => item.id === productId);
-
-        if (product) {
-            document.getElementById("productName").textContent = product.name;
-            document.getElementById("category").textContent = product.category;
-            document.getElementById("productPrice").textContent = "₹" + product.price.toLocaleString("en-IN");
-            document.getElementById("productDescription").textContent = product.description;
-            document.getElementById("productImage").src = product.image;
+            document.getElementById("productArt").textContent = CAT_EMOJI[product.category_name] || "📦";
+            document.getElementById("category").textContent = product.category_name || "";
+            document.getElementById("productName").textContent = product.product_name;
+            document.getElementById("productPrice").textContent = money(product.price);
+            document.getElementById("productDescription").textContent = product.description || "No description provided.";
+            document.title = product.product_name + " | Marketly";
 
             const button = document.getElementById("addToCart");
-
-            if (product.stock > 0) {
-                document.getElementById("stockStatus").textContent = "In Stock: " + product.stock + " available";
+            const stockEl = document.getElementById("stockStatus");
+            if (product.status === "active" && product.stock_quantity > 0) {
+                stockEl.textContent = "In Stock: " + product.stock_quantity + " available";
             } else {
-                document.getElementById("stockStatus").textContent = "Out of Stock";
-                document.getElementById("stockStatus").style.color = "red";
+                stockEl.textContent = "Out of Stock";
+                stockEl.style.color = "red";
                 button.disabled = true;
                 button.textContent = "Out of Stock";
             }
 
-            button.addEventListener("click", function() {
-                const cart = JSON.parse(localStorage.getItem("marketlyCart") || "[]");
-                const existing = cart.find(item => item.id === product.id);
-
-                if (existing) {
-                    if (existing.quantity >= product.stock) {
-                        document.getElementById("message").textContent = "Maximum available stock reached.";
-                        return;
-                    }
-                    existing.quantity++;
-                } else {
-                    cart.push({
-                        id: product.id,
-                        name: product.name,
-                        price: product.price,
-                        quantity: 1
-                    });
+            button.addEventListener("click", async () => {
+                const user = getUser();
+                if (!user) { msg.style.color = "red"; msg.textContent = "Please log in to add to cart."; setTimeout(() => location.href = "login.html", 900); return; }
+                if (user.role !== "customer") { msg.style.color = "red"; msg.textContent = "Only customers can add to cart."; return; }
+                try {
+                    const res = await fetch("/api/cart/items", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json", "x-user-id": user.user_id },
+                        body: JSON.stringify({ product_id: product.product_id, quantity: 1 })
+                    }).then(r => r.json());
+                    msg.style.color = res.success ? "green" : "red";
+                    msg.textContent = res.success ? "Added to your cart!" : (res.message || "Couldn't add to cart.");
+                } catch (e) {
+                    msg.style.color = "red";
+                    msg.textContent = "Couldn't add to cart.";
                 }
-
-                localStorage.setItem("marketlyCart", JSON.stringify(cart));
-                document.getElementById("message").textContent = "Product added to cart successfully!";
             });
-        } else {
-            document.querySelector("main").textContent = "Product not found.";
+
+            loadReviews();
         }
+
+        async function loadReviews() {
+            const box = document.getElementById("reviews");
+            try {
+                const res = await fetch("/api/reviews/product/" + productId).then(r => r.json());
+                const reviews = res.reviews || [];
+                const header = `<h2>Reviews ${reviews.length ? "· ★ " + res.average_rating + " (" + reviews.length + ")" : ""}</h2>`;
+                const user = getUser();
+                const writeBtn = (user && user.role === "customer")
+                    ? `<button id="writeReview" style="margin-bottom:15px">Write a review</button>` : "";
+                const list = reviews.length ? reviews.map(r => `
+                    <div class="review">
+                        <strong>${r.customer_name}</strong> <span class="stars">★ ${r.rating}</span>
+                        <p style="color:#64748b;margin-top:6px">${r.comment ? r.comment : ""}</p>
+                    </div>`).join("") : `<p style="color:#64748b">No reviews yet.</p>`;
+                box.innerHTML = header + writeBtn + list;
+                const wb = document.getElementById("writeReview");
+                if (wb) wb.addEventListener("click", postReview);
+            } catch (e) {}
+        }
+
+        async function postReview() {
+            const user = getUser();
+            const rating = Number(prompt("Your rating (1-5):"));
+            if (!rating) return;
+            const comment = prompt("Your comment (optional):") || "";
+            try {
+                const res = await fetch("/api/reviews", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json", "x-user-id": user.user_id },
+                    body: JSON.stringify({ product_id: productId, rating, comment })
+                }).then(r => r.json());
+                alert(res.message || (res.success ? "Review added" : "Failed to add review"));
+                if (res.success) loadReviews();
+            } catch (e) { alert("Could not submit review."); }
+        }
+
+        loadProduct();
     </script>
 </body>
 </html>

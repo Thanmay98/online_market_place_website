@@ -157,7 +157,7 @@
     </div>
 
     <script>
-        document.getElementById("registerForm").addEventListener("submit", function(e) {
+        document.getElementById("registerForm").addEventListener("submit", async function(e) {
 
             e.preventDefault();
 
@@ -194,8 +194,28 @@
                 return;
             }
 
-            message.style.color = "green";
-            message.textContent = "Registration form validated successfully!";
+            try {
+                const res = await fetch("/api/auth/register", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ name, email, mobile, password, role })
+                }).then(r => r.json());
+
+                if (!res.success) {
+                    message.style.color = "red";
+                    message.textContent = res.message || "Registration failed.";
+                    return;
+                }
+
+                message.style.color = "green";
+                message.textContent = role === "seller"
+                    ? "Seller account created! An admin must approve it before you can sell. Redirecting to login…"
+                    : "Account created! Redirecting to login…";
+                setTimeout(() => location.href = "login.html", 1400);
+            } catch (err) {
+                message.style.color = "red";
+                message.textContent = "Could not reach the server.";
+            }
 
         });
     </script>
